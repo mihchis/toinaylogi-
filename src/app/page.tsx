@@ -5,6 +5,7 @@ import { flushSync } from 'react-dom';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AudioLines,
+  Box,
   ExternalLink,
   Sparkles,
   Volume2,
@@ -83,6 +84,7 @@ export default function Home() {
   const [sound, setSound] = useState(true);
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<Actress | null>(null);
+  const [lastChoice, setLastChoice] = useState<Actress | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [active, setActive] = useState<Actress[]>([]);
   const [reel, setReel] = useState<{ actress: Actress; id: number }[]>([]);
@@ -156,8 +158,11 @@ export default function Home() {
   }, [eligible]);
   useEffect(() => {
     const last = readCookie<{ id?: unknown }>('last-choice');
-    if (last?.id && typeof last.id === 'string')
-      setResult(active.find((item) => item.id === last.id) ?? null);
+    if (last?.id && typeof last.id === 'string') {
+      const found = active.find((item) => item.id === last.id) ?? null;
+      setResult(found);
+      setLastChoice(found);
+    }
   }, [active]);
   const attachTrack = useCallback((node: HTMLDivElement | null) => {
     track.current = node;
@@ -236,6 +241,7 @@ export default function Home() {
       busy.current = false;
       setSpinning(false);
       setResult(winner);
+      setLastChoice(winner);
       setRevealed(true);
       audio.current?.play(
         (
@@ -336,17 +342,34 @@ export default function Home() {
         {!eligible.length && (
           <p className="preferences-message">{t.noEligible}</p>
         )}
-        <p className="local-counter" title={t.localCounterTitle}>
-          {t.localSpins} <strong>{localSpins}</strong> {t.localCases}
-        </p>
-        {result && !spinning && (
-          <p className="local-counter">
-            {t.lastChoice} <strong>{result.publicName}</strong>
-          </p>
-        )}
+        <div className="stattrak-container" title={t.localCounterTitle}>
+          <div className="stattrak-badge">
+            <span className="stattrak-label">{t.stattrakLabel}</span>
+            <span className="stattrak-caption">{t.stattrakSpins}</span>
+            <span className="stattrak-digits">
+              {String(localSpins).padStart(6, '0')}
+            </span>
+          </div>
+        </div>
+        <div className="cs-case-heading">
+          <div className="cs-case-emblem" aria-hidden="true">
+            <Box size={24} />
+          </div>
+          <div className="cs-case-info">
+            <span className="cs-case-subtitle">{t.crateCollection}</span>
+            <h2 className="cs-case-title">{t.crateTitle}</h2>
+          </div>
+          <div className={`cs-case-status ${spinning ? 'opening' : 'ready'}`}>
+            <span className="cs-case-status-dot" />
+            <span>{spinning ? t.openingCase : t.readyToOpen}</span>
+          </div>
+        </div>
         <section className="case-panel" aria-label={t.caseLabel}>
           <div className="reel-window" ref={viewport}>
-            <div className="selector-line" />
+            <div className="selector-line">
+              <div className="selector-marker top" />
+              <div className="selector-marker bottom" />
+            </div>
             <div className="reel-track" ref={attachTrack}>
               {reel
                 .filter(
@@ -366,13 +389,27 @@ export default function Home() {
           </div>
         </section>
         <div className="control-bar">
-          <div>
-            <small>
-              {t.sourceData}{' '}
-              {new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-US', {
-                dateStyle: 'medium',
-              }).format(new Date(snapshot.createdAt))}
-            </small>
+          <div className="last-choice-slot">
+            <span className="last-choice-tag">{t.lastChoice}</span>
+            {lastChoice ? (
+              <div className="last-choice-card">
+                <span
+                  className="last-choice-tier-pill"
+                  style={
+                    {
+                      '--rarity': colors[lastChoice.tier],
+                    } as React.CSSProperties
+                  }
+                >
+                  {t.tiers[lastChoice.tier]}
+                </span>
+                <strong className="last-choice-name">
+                  {lastChoice.publicName}
+                </strong>
+              </div>
+            ) : (
+              <span className="last-choice-empty">—</span>
+            )}
           </div>
           <button
             className="open-button"
@@ -476,16 +513,24 @@ export default function Home() {
           <div className="inventory-grid">{inventory}</div>
         </section>
         <footer>
-          <span>
-            Tối Nay Lọ Gì? ·{' '}
-            <a href="/privacy.html">
-              {language === 'vi' ? 'Quyền riêng tư' : 'Privacy'}
-            </a>{' '}
-            ·{' '}
-            <a href="/terms.html">
-              {language === 'vi' ? 'Điều khoản' : 'Terms'}
-            </a>
-          </span>
+          <div className="footer-left">
+            <span>
+              Tối Nay Lọ Gì? ·{' '}
+              <a href="/privacy.html">
+                {language === 'vi' ? 'Quyền riêng tư' : 'Privacy'}
+              </a>{' '}
+              ·{' '}
+              <a href="/terms.html">
+                {language === 'vi' ? 'Điều khoản' : 'Terms'}
+              </a>
+            </span>
+            <span className="footer-source">
+              {t.sourceData}{' '}
+              {new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-US', {
+                dateStyle: 'medium',
+              }).format(new Date(snapshot.createdAt))}
+            </span>
+          </div>
           <span>
             {t.adultNote} {t.footer}{' '}
             <a
