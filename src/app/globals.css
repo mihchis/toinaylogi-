@@ -791,8 +791,26 @@ footer a {
   background: #e6a436;
   color: #1a1307;
   text-decoration: none;
-  padding: 9px 10px;
+  padding: 9px 12px;
   font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.find-button:hover {
+  background: #f1b34b;
+}
+.find-button svg {
+  flex-shrink: 0;
+}
+.winner-actions button {
+  cursor: pointer;
+  white-space: nowrap;
+}
+.winner-actions button:hover {
+  background: #34474f;
 }
 .cache-state {
   min-height: 100vh;

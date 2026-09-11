@@ -461,9 +461,7 @@ export default function Home() {
                   result.waistCm ||
                   result.hipCm ||
                   result.cup ||
-                  result.bloodType ||
-                  result.hometown ||
-                  result.hobby) && (
+                  result.bloodType) && (
                   <div className="winner-details">
                     {result.birthDate && (
                       <div className="winner-detail">
@@ -485,19 +483,19 @@ export default function Home() {
                         <strong>{result.heightCm} cm</strong>
                       </div>
                     )}
-                    {(result.bustCm || result.waistCm || result.hipCm) && (
+                    {(result.bustCm ||
+                      result.waistCm ||
+                      result.hipCm ||
+                      result.cup) && (
                       <div className="winner-detail">
                         <span>{t.measurements}</span>
                         <strong>
-                          B{result.bustCm ?? '—'} · W{result.waistCm ?? '—'} · H
-                          {result.hipCm ?? '—'} cm
+                          B{result.bustCm ?? '—'}
+                          {result.cup
+                            ? ` (${result.cup.replace(/-Cup$/i, '').trim()})`
+                            : ''}{' '}
+                          · W{result.waistCm ?? '—'} · H{result.hipCm ?? '—'} cm
                         </strong>
-                      </div>
-                    )}
-                    {result.cup && (
-                      <div className="winner-detail">
-                        <span>{t.cup}</span>
-                        <strong>{result.cup.replace(/-Cup$/i, '')}</strong>
                       </div>
                     )}
                     {result.bloodType && (
@@ -506,26 +504,14 @@ export default function Home() {
                         <strong>{result.bloodType}</strong>
                       </div>
                     )}
-                    {result.hometown && (
-                      <div className="winner-detail">
-                        <span>{t.hometown}</span>
-                        <strong>{result.hometown}</strong>
-                      </div>
-                    )}
-                    {result.hobby && (
-                      <div className="winner-detail winner-detail-wide">
-                        <span>{t.hobby}</span>
-                        <strong>{result.hobby}</strong>
-                      </div>
-                    )}
                   </div>
                 )}
                 <div className="winner-profile">
                   <strong>{t.topFilms}</strong>
                   {result.contributingMovies.map((movie) => (
                     <a
-                      key={movie.movieUrl}
-                      href={movie.movieUrl}
+                      key={movie.code}
+                      href={`https://www.google.com/search?q=${encodeURIComponent(movie.code)}`}
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -574,11 +560,15 @@ export default function Home() {
                 <div className="winner-actions">
                   <a
                     className="find-button"
-                    href={result.sourceUrl}
+                    href={
+                      result.avBaseUrl ||
+                      `https://www.google.com/search?q=${encodeURIComponent(result.nativeName || result.name)}`
+                    }
                     target="_blank"
                     rel="noreferrer"
                   >
-                    {t.source} <ExternalLink size={16} />
+                    <span>{t.source}</span>
+                    <ExternalLink size={16} />
                   </a>
                   <button onClick={() => setRevealed(false)}>
                     {t.continue}
