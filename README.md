@@ -16,20 +16,25 @@ Cần **Node.js 22.12+** và phiên bản **pnpm** ghi trong [package.json](pack
 git clone https://github.com/truanayangi-com/truanayangi.git
 cd truanayangi
 pnpm install --frozen-lockfile
-pnpm start
+pnpm dev
 ```
 
-Mở [127.0.0.1:5173](http://127.0.0.1:5173). Không cần tạo `.env` hay cấu hình dịch vụ bên ngoài. Nếu cổng đang bận, chạy `pnpm start --port 5188`.
+Mở [127.0.0.1:3000](http://127.0.0.1:3000). Không cần tạo `.env` hay cấu hình dịch vụ bên ngoài. Nếu cổng đang bận, chạy `pnpm dev -- --port 5188`.
 
 Các lệnh phát triển:
 
 ```sh
-pnpm test       # Chạy kiểm tra
-pnpm build      # Tạo bản build
-pnpm preview    # Xem bản build tại http://127.0.0.1:4173
+pnpm test           # Chạy kiểm tra logic
+pnpm typecheck      # Kiểm tra TypeScript
+pnpm lint           # Kiểm tra Next.js/ESLint
+pnpm format         # Định dạng mã bằng Prettier
+pnpm format:check   # Kiểm tra định dạng
+pnpm build          # Tạo production build
+pnpm start          # Chạy production build tại http://127.0.0.1:3000
+pnpm preview        # Alias của pnpm start
 ```
 
-Máy chủ chỉ lắng nghe trên `127.0.0.1`. Sau khi cài dependencies, ứng dụng tải tài nguyên từ máy; các liên kết bên ngoài chỉ mở khi bạn bấm vào.
+Các máy chủ Next.js chỉ lắng nghe trên `127.0.0.1`. Hãy chạy `pnpm build` trước `pnpm start` hoặc `pnpm preview`. Sau khi cài dependencies, ứng dụng tải tài nguyên từ máy; các liên kết bên ngoài chỉ mở khi bạn bấm vào.
 
 ## Dữ liệu của bạn
 

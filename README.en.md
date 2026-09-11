@@ -16,20 +16,25 @@ You need **Node.js 22.12+** and the **pnpm** version specified in [package.json]
 git clone https://github.com/truanayangi-com/truanayangi.git
 cd truanayangi
 pnpm install --frozen-lockfile
-pnpm start
+pnpm dev
 ```
 
-Open [127.0.0.1:5173](http://127.0.0.1:5173). No `.env` file or external service setup is needed. If the port is busy, run `pnpm start --port 5188`.
+Open [127.0.0.1:3000](http://127.0.0.1:3000). No `.env` file or external service setup is needed. If the port is busy, run `pnpm dev -- --port 5188`.
 
 Development commands:
 
 ```sh
-pnpm test       # Run checks
-pnpm build      # Create a build
-pnpm preview    # Preview at http://127.0.0.1:4173
+pnpm test           # Run logic checks
+pnpm typecheck      # Check TypeScript
+pnpm lint           # Run Next.js/ESLint checks
+pnpm format         # Format code with Prettier
+pnpm format:check   # Verify formatting
+pnpm build          # Create a production build
+pnpm start          # Serve a production build at http://127.0.0.1:3000
+pnpm preview        # Alias for pnpm start
 ```
 
-The servers bind to `127.0.0.1` only. Once dependencies are installed, the app loads its assets locally; external links open only when you click them.
+The Next.js servers bind to `127.0.0.1` only. Run `pnpm build` before `pnpm start` or `pnpm preview`. Once dependencies are installed, the app loads its assets locally; external links open only when you click them.
 
 ## Your data
 

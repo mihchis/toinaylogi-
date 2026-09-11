@@ -1,21 +1,25 @@
 {
   "name": "truanayangi",
   "version": "1.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview --host 127.0.0.1",
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "preview": "next start --hostname 127.0.0.1",
     "test": "node --test tests/cookies.test.mjs tests/case-mechanics.test.mjs && node tests/personal-pool.cjs",
     "typecheck": "tsc --noEmit",
-    "start": "vite --host 127.0.0.1"
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "1.43.0",
+    "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "tailwind-merge": "3.6.0",
@@ -26,11 +30,14 @@
     "@types/node": "26.5.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
-    "@vitejs/plugin-react": "6.1.1",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.4",
+    "eslint-config-prettier": "10.1.8",
     "esbuild": "0.28.2",
+    "prettier": "3.9.6",
+    "prettier-plugin-tailwindcss": "0.8.1",
     "tailwindcss": "4.3.3",
-    "typescript": "7.0.2",
-    "vite": "8.2.2"
+    "typescript": "6.0.3"
   },
   "packageManager": "pnpm@12.3.4",
   "engines": {
