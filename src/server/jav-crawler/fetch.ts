@@ -9,6 +9,7 @@ const allowedImageHosts = new Set([
   'cdn.javmiku.com',
   'cdn.javnorth.com',
   'cdn.javsts.com',
+  'pics.dmm.co.jp',
 ]);
 
 export function safeImageUrl(value: string) {

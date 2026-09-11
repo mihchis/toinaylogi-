@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { SNAPSHOT_SCHEMA_VERSION, type ActressSnapshot } from '@/lib/actresses';
 import { assignFoodAliases, createSeededRandom } from '@/lib/food-aliases';
 import { fetchHtml, fetchImage, mapLimit, safeImageUrl } from './fetch';
+import { createAvBaseEnricher, mergeAvBaseProfile } from './avbase';
 import {
   parseActressProfile,
   parseMovieActressUrls,
@@ -83,31 +84,44 @@ export async function refreshActressData(force = false) {
       state: 'refreshing',
       message: `Reading ${actressesToMovies.size} actress profiles`,
     });
+    const avbase = createAvBaseEnricher();
     const profiles = await mapLimit(
       [...actressesToMovies.entries()],
       2,
       async ([sourceUrl, movies]) => {
-        const profile = parseActressProfile(
+        const javProfile = parseActressProfile(
           await fetchHtml(sourceUrl),
           sourceUrl,
         );
-        const image = profile.imageUrl && safeImageUrl(profile.imageUrl);
-        if (!image) return { ...profile, movies } satisfies ProfileWithMovies;
-        try {
-          const download = await fetchImage(image.href);
-          const filename = `${profile.id}.${extensionFor(download.contentType)}`;
-          await writeFile(join(staging, 'images', filename), download.bytes);
-          return {
-            ...profile,
-            movies,
-            imagePath: `/actress-cache/snapshots/${snapshotId}/images/${filename}`,
-          } satisfies ProfileWithMovies;
-        } catch (error) {
-          console.warn(
-            `[jav-crawler] Skipping image for ${profile.id}: ${error instanceof Error ? error.message : String(error)}`,
-          );
-          return { ...profile, movies } satisfies ProfileWithMovies;
+        const enriched = await avbase.lookup(javProfile);
+        const profile =
+          enriched.kind === 'matched'
+            ? mergeAvBaseProfile(javProfile, enriched.profile, enriched.url)
+            : javProfile;
+        if (enriched.kind === 'unavailable' || enriched.kind === 'malformed')
+          console.warn(`[jav-crawler] AvBase: ${enriched.message}`);
+
+        const imageUrls = [...new Set([profile.imageUrl, javProfile.imageUrl])]
+          .filter((value): value is string => typeof value === 'string')
+          .map(safeImageUrl)
+          .filter((value): value is URL => Boolean(value));
+        for (const image of imageUrls) {
+          try {
+            const download = await fetchImage(image.href);
+            const filename = `${profile.id}.${extensionFor(download.contentType)}`;
+            await writeFile(join(staging, 'images', filename), download.bytes);
+            return {
+              ...profile,
+              movies,
+              imagePath: `/actress-cache/snapshots/${snapshotId}/images/${filename}`,
+            } satisfies ProfileWithMovies;
+          } catch (error) {
+            console.warn(
+              `[jav-crawler] Skipping image for ${profile.id}: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          }
         }
+        return { ...profile, movies } satisfies ProfileWithMovies;
       },
     );
     const actresses = assignFoodAliases(
@@ -126,6 +140,7 @@ export async function refreshActressData(force = false) {
         pages: 3,
         listEntries: discovered.length,
         uniqueMovies: uniqueMovies.length,
+        enrichment: avbase.stats,
       },
       actresses,
     };

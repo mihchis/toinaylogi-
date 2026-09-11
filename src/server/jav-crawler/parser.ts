@@ -1,5 +1,9 @@
 import * as cheerio from 'cheerio';
-import { canonicalJavUrl, isSafeSocialLink } from '@/lib/actresses';
+import {
+  canonicalJavUrl,
+  isSafeSocialLink,
+  type SocialLink,
+} from '@/lib/actresses';
 
 export type RankedMovie = { rank: number; url: string; code: string };
 export type ParsedProfile = {
@@ -12,7 +16,18 @@ export type ParsedProfile = {
   heightCm?: number;
   videoCount?: number;
   imageUrl?: string;
-  socialLinks: { label: 'X' | 'Instagram'; url: string }[];
+  socialLinks: SocialLink[];
+  nativeName?: string;
+  nameReading?: string;
+  birthDate?: string;
+  bustCm?: number;
+  waistCm?: number;
+  hipCm?: number;
+  bloodType?: string;
+  hometown?: string;
+  hobby?: string;
+  avBaseUrl?: string;
+  wikipediaUrl?: string;
 };
 const compact = (value: string) =>
   value.replace(/\s+/g, ' ').trim().normalize('NFC');
@@ -107,7 +122,7 @@ export function parseActressProfile(
         : className.includes('twitter')
           ? 'X'
           : null;
-      return label && isSafeSocialLink(url) ? { label, url } : null;
+      return label && isSafeSocialLink(url, label) ? { label, url } : null;
     })
     .filter(Boolean) as ParsedProfile['socialLinks'];
   return {

@@ -35,6 +35,13 @@ import { CaseAudio } from '@/lib/case-audio';
 
 const colors = ['#4b69ff', '#8847ff', '#d32ce6', '#eb4b4b', '#e4ae39'];
 
+function formatBirthDate(value: string, language: Language) {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-US', {
+    dateStyle: 'long',
+  }).format(new Date(year, month - 1, day));
+}
+
 function ActressImage({ actress, alt }: { actress: Actress; alt: string }) {
   // Cached user-generated image dimensions vary; avoid optimizer routes for local snapshots.
   return (
@@ -428,6 +435,13 @@ export default function Home() {
                 <DialogTitle className="winner-title">
                   {result.name}
                 </DialogTitle>
+                {(result.nativeName || result.nameReading) && (
+                  <p className="winner-native-name">
+                    {[result.nativeName, result.nameReading]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
+                )}
                 <DialogDescription className="winner-description">
                   {t.tiers[result.tier]} · {t.score}: {result.score} ·{' '}
                   {result.appearances} {t.appearances}
@@ -440,6 +454,72 @@ export default function Home() {
                 >
                   <ActressImage actress={result} alt={result.name} />
                 </div>
+                {(result.birthDate ||
+                  result.age ||
+                  result.heightCm ||
+                  result.bustCm ||
+                  result.waistCm ||
+                  result.hipCm ||
+                  result.cup ||
+                  result.bloodType ||
+                  result.hometown ||
+                  result.hobby) && (
+                  <div className="winner-details">
+                    {result.birthDate && (
+                      <div className="winner-detail">
+                        <span>{t.birthDate}</span>
+                        <strong>
+                          {formatBirthDate(result.birthDate, language)}
+                        </strong>
+                      </div>
+                    )}
+                    {!result.birthDate && result.age && (
+                      <div className="winner-detail">
+                        <span>{t.age}</span>
+                        <strong>{result.age}</strong>
+                      </div>
+                    )}
+                    {result.heightCm && (
+                      <div className="winner-detail">
+                        <span>{t.height}</span>
+                        <strong>{result.heightCm} cm</strong>
+                      </div>
+                    )}
+                    {(result.bustCm || result.waistCm || result.hipCm) && (
+                      <div className="winner-detail">
+                        <span>{t.measurements}</span>
+                        <strong>
+                          B{result.bustCm ?? '—'} · W{result.waistCm ?? '—'} · H
+                          {result.hipCm ?? '—'} cm
+                        </strong>
+                      </div>
+                    )}
+                    {result.cup && (
+                      <div className="winner-detail">
+                        <span>{t.cup}</span>
+                        <strong>{result.cup.replace(/-Cup$/i, '')}</strong>
+                      </div>
+                    )}
+                    {result.bloodType && (
+                      <div className="winner-detail">
+                        <span>{t.bloodType}</span>
+                        <strong>{result.bloodType}</strong>
+                      </div>
+                    )}
+                    {result.hometown && (
+                      <div className="winner-detail">
+                        <span>{t.hometown}</span>
+                        <strong>{result.hometown}</strong>
+                      </div>
+                    )}
+                    {result.hobby && (
+                      <div className="winner-detail winner-detail-wide">
+                        <span>{t.hobby}</span>
+                        <strong>{result.hobby}</strong>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="winner-profile">
                   <strong>{t.topFilms}</strong>
                   {result.contributingMovies.map((movie) => (
@@ -462,9 +542,33 @@ export default function Home() {
                         target="_blank"
                         rel="noreferrer"
                       >
-                        {social.label} <ExternalLink size={12} />
+                        {social.label}
+                        {social.handle ? ` @${social.handle}` : ''}{' '}
+                        <ExternalLink size={12} />
                       </a>
                     ))}
+                  </div>
+                )}
+                {(result.avBaseUrl || result.wikipediaUrl) && (
+                  <div className="winner-socials winner-reference-links">
+                    {result.avBaseUrl && (
+                      <a
+                        href={result.avBaseUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {t.avBaseProfile} <ExternalLink size={12} />
+                      </a>
+                    )}
+                    {result.wikipediaUrl && (
+                      <a
+                        href={result.wikipediaUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {t.wikipedia} <ExternalLink size={12} />
+                      </a>
+                    )}
                   </div>
                 )}
                 <div className="winner-actions">

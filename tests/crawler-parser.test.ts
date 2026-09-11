@@ -97,6 +97,13 @@ test('snapshot schema requires a same-tier food alias and an image path', () => 
       pages: 3,
       listEntries: 45,
       uniqueMovies: 45,
+      enrichment: {
+        provider: 'avbase',
+        attempted: 1,
+        matched: 1,
+        skipped: 0,
+        blocked: 0,
+      },
     },
     actresses: [
       {
@@ -138,4 +145,34 @@ test('snapshot schema requires a same-tier food alias and an image path', () => 
     }),
     null,
   );
+  assert.equal(
+    validateSnapshot({
+      ...snapshot,
+      actresses: [
+        {
+          ...snapshot.actresses[0],
+          socialLinks: [
+            { label: 'TikTok', url: 'https://example.com/not-a-profile' },
+          ],
+        },
+      ],
+    }),
+    null,
+  );
+  const legacy = validateSnapshot({
+    ...snapshot,
+    schemaVersion: 3,
+    source: {
+      ...snapshot.source,
+      enrichment: undefined,
+    },
+  });
+  assert.equal(legacy?.schemaVersion, SNAPSHOT_SCHEMA_VERSION);
+  assert.deepEqual(legacy?.source.enrichment, {
+    provider: 'avbase',
+    attempted: 0,
+    matched: 0,
+    skipped: 0,
+    blocked: 0,
+  });
 });

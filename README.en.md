@@ -2,7 +2,7 @@
 
 [Tiếng Việt](README.md) · **English**
 
-A local case-opening app that selects a JAV actress. Its local Next.js server crawls the first three pages of JAV.Guru's monthly-view ranking and refreshes the pool no more than weekly.
+A local case-opening app that selects a JAV actress. Its local Next.js server crawls the first three pages of JAV.Guru's monthly-view ranking, best-effort enriches profiles from AvBase, and refreshes the pool no more than weekly.
 
 ## Run locally
 
@@ -23,11 +23,12 @@ pnpm build
 pnpm preview
 ```
 
-The server binds to loopback only. Once a snapshot exists, the browser loads local JSON/images only; JAV.Guru, X and Instagram links open solely after a user click.
+The server binds to loopback only. During enrichment, it uses `impit` with a Chrome TLS fingerprint only for AvBase requests; an AvBase error, 403, or 429 never prevents a new JAV.Guru snapshot from publishing. Once a snapshot exists, the browser loads local JSON/images only; JAV.Guru, AvBase, Wikipedia, X, Instagram, and TikTok links open solely after a user click.
 
 ## Local data
 
-- Crawler snapshots/images are in gitignored `public/actress-cache/`.
+- Snapshot v4 and crawler images are in gitignored `public/actress-cache/`; existing v3 snapshots remain readable during refresh.
+- JAV.Guru determines ranking/tier. AvBase is a best-effort supplement for Japanese name/reading, birthday, measurements, cup, blood type, hometown, hobbies, social links, Wikipedia, and DMM images copied into the local cache.
 - Staging and locks are in gitignored `.cache/jav-crawler/`.
 - Tier filters, actress exclusions, language and local spin count are bounded, versioned host-only cookies. The counter belongs to this browser, never a community total.
 

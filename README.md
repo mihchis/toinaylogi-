@@ -2,7 +2,7 @@
 
 **Tiếng Việt** · [English](README.en.md)
 
-Ứng dụng local mở hòm để chọn một nữ diễn viên JAV. Pool được Next.js server trên máy crawl từ xếp hạng lượt xem tháng của JAV.Guru (ba trang đầu) và làm mới tối đa mỗi tuần.
+Ứng dụng local mở hòm để chọn một nữ diễn viên JAV. Pool được Next.js server trên máy crawl từ xếp hạng lượt xem tháng của JAV.Guru (ba trang đầu), enrich best-effort hồ sơ từ AvBase và làm mới tối đa mỗi tuần.
 
 ## Chạy trên máy
 
@@ -23,11 +23,12 @@ pnpm build
 pnpm preview
 ```
 
-Server chỉ lắng nghe loopback. Sau khi snapshot đã có, browser chỉ tải JSON và ảnh local; JAV.Guru/X/Instagram chỉ mở qua liên kết bạn bấm.
+Server chỉ lắng nghe loopback. Khi enrich, server dùng `impit` với Chrome TLS fingerprint chỉ cho request AvBase; lỗi/403/429 từ AvBase không ngăn snapshot JAV.Guru mới được publish. Sau khi snapshot đã có, browser chỉ tải JSON và ảnh local; JAV.Guru/AvBase/Wikipedia/X/Instagram/TikTok chỉ mở qua liên kết bạn bấm.
 
 ## Dữ liệu cục bộ
 
-- Snapshot và ảnh crawler nằm trong `public/actress-cache/` (gitignored).
+- Snapshot v4 và ảnh crawler nằm trong `public/actress-cache/` (gitignored); snapshot v3 cũ vẫn đọc được trong lúc refresh.
+- JAV.Guru quyết định ranking/tier; AvBase chỉ bổ sung best-effort tên Nhật/ruby, ngày sinh, số đo, cup, nhóm máu, quê quán, sở thích, social, Wikipedia và ảnh DMM được tải lại vào cache local.
 - Tiến trình/lock tạm nằm trong `.cache/jav-crawler/` (gitignored).
 - Lọc tier, loại trừ diễn viên, ngôn ngữ và số lượt mở nằm trong cookie host-only, versioned, có giới hạn. Đây là số lượt mở của riêng browser, không phải tổng cộng đồng.
 

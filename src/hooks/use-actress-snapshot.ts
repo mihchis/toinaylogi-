@@ -23,7 +23,8 @@ async function fetchJson(path: string) {
 function validateStatus(value: unknown): RefreshStatus | null {
   if (!value || typeof value !== 'object') return null;
   const status = value as Record<string, unknown>;
-  return status.schemaVersion === SNAPSHOT_SCHEMA_VERSION &&
+  return (status.schemaVersion === SNAPSHOT_SCHEMA_VERSION ||
+    status.schemaVersion === 3) &&
     ['idle', 'refreshing', 'error'].includes(String(status.state)) &&
     typeof status.updatedAt === 'string'
     ? {
