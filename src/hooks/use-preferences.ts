@@ -2,31 +2,29 @@ import { useEffect, useState } from 'react';
 import {
   emptyProfile,
   validateProfile,
-  type PoolProfile,
-} from '@/lib/personal-pool';
+  type ActressProfile,
+} from '@/lib/actress-preferences';
 import { readCookie, writeCookie, clearCookie } from '@/lib/cookies';
 function load() {
   try {
-    return validateProfile(readCookie('pool'));
+    return validateProfile(readCookie('actress-pool'));
   } catch {
     return emptyProfile();
   }
 }
 export function usePreferences() {
-  const [profile, setProfile] = useState<PoolProfile>(emptyProfile),
+  const [profile, setProfile] = useState<ActressProfile>(emptyProfile),
     [error, setError] = useState('');
-  useEffect(() => {
-    setProfile(load());
-  }, []);
-  const save = (next: PoolProfile) => {
+  useEffect(() => setProfile(load()), []);
+  const save = (next: ActressProfile) => {
     try {
       const checked = validateProfile(next);
-      writeCookie('pool', checked);
+      writeCookie('actress-pool', checked);
       setProfile(checked);
       setError('');
       return true;
-    } catch (e) {
-      setError((e as Error).message);
+    } catch (error) {
+      setError((error as Error).message);
       return false;
     }
   };
@@ -38,12 +36,12 @@ export function usePreferences() {
   };
   const remove = () => {
     try {
-      clearCookie('pool');
+      clearCookie('actress-pool');
       setProfile(emptyProfile());
       setError('');
       return true;
-    } catch (e) {
-      setError((e as Error).message);
+    } catch (error) {
+      setError((error as Error).message);
       return false;
     }
   };

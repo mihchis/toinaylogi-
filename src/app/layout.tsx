@@ -3,8 +3,8 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Trưa nay ăn gì?',
-  applicationName: 'Trưa Nay Ăn Gì',
+  title: 'Tối Nay Lọ Gì?',
+  applicationName: 'Tối Nay Lọ Gì?',
   robots: {
     index: false,
     follow: false,

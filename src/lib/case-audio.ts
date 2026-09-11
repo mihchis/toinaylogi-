@@ -21,6 +21,7 @@ export class CaseAudio {
   private disposed = false;
   private activated = false;
   private generation = 0;
+  private resuming?: Promise<void>;
   constructor(private readonly base = '') {}
   preload() {
     // Decode off the click path; playback is still unlocked only by a gesture.
@@ -46,6 +47,17 @@ export class CaseAudio {
   }
   recover() {
     if (this.activated && this.context && !this.muted) this.unlock();
+  }
+  private resumeContext() {
+    if (!this.context || this.context.state === 'running')
+      return Promise.resolve();
+    this.resuming ??= this.context
+      .resume()
+      .catch(() => {})
+      .finally(() => {
+        this.resuming = undefined;
+      });
+    return this.resuming;
   }
   private fetchSound(name: CaseSound) {
     let request = this.requests.get(name);
@@ -92,7 +104,7 @@ export class CaseAudio {
         this.legacyRoute.loop = true;
         void this.legacyRoute.play().catch(() => {});
       }
-      void this.context.resume().catch(() => {});
+      void this.resumeContext();
       const pulse = this.context.createBufferSource();
       pulse.buffer = this.context.createBuffer(1, 1, this.context.sampleRate);
       pulse.connect(this.gain!);
@@ -106,21 +118,26 @@ export class CaseAudio {
   play(name: CaseSound) {
     if (this.disposed || this.muted || document.hidden || !this.context) return;
     const buffer = this.buffers.get(name);
-    if (!buffer) {
-      // Drop stale ticks. Opening/reveal sounds may wait briefly for their first decode.
+    if (!buffer || this.context.state !== 'running') {
+      // Tick sounds must not backlog. Opening/reveal sounds get a short retry
+      // while first decode and AudioContext.resume() complete after the gesture.
       if (name !== 'csgo_ui_crate_item_scroll') {
         const generation = this.generation,
           deadline = performance.now() + 1200;
         void this.decode(name)
+          .then(() => this.resumeContext())
           .then(() => {
-            if (generation === this.generation && performance.now() < deadline)
+            if (
+              generation === this.generation &&
+              performance.now() < deadline &&
+              this.context?.state === 'running'
+            )
               this.play(name);
           })
           .catch(() => {});
       }
       return;
     }
-    if (this.context.state !== 'running') return;
     const source = this.context.createBufferSource();
     source.buffer = buffer;
     source.connect(this.gain!);

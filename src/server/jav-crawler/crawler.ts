@@ -1,0 +1,154 @@
+import { rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { SNAPSHOT_SCHEMA_VERSION, type ActressSnapshot } from '@/lib/actresses';
+import { assignFoodAliases, createSeededRandom } from '@/lib/food-aliases';
+import { fetchHtml, fetchImage, mapLimit, safeImageUrl } from './fetch';
+import {
+  parseActressProfile,
+  parseMovieActressUrls,
+  parseRankingPage,
+  type RankedMovie,
+} from './parser';
+import {
+  assignTiers,
+  profilesWithImages,
+  type ProfileWithMovies,
+} from './scoring';
+import { makeStaging, publishSnapshot, takeLock, writeStatus } from './store';
+
+const rankingUrl = (page: number) =>
+  page === 1
+    ? 'https://jav.guru/?s=&orderby=views-monthly&order=DESC&category_name=jav'
+    : `https://jav.guru/page/${page}/?s=&orderby=views-monthly&order=DESC&category_name=jav`;
+const extensionFor = (contentType: string) =>
+  contentType.includes('png')
+    ? 'png'
+    : contentType.includes('webp')
+      ? 'webp'
+      : 'jpg';
+
+export async function refreshActressData(force = false) {
+  const release = await takeLock();
+  if (!release) return false;
+  let staging = '';
+  try {
+    await writeStatus({
+      state: 'refreshing',
+      message: 'Fetching ranking pages',
+    });
+    const rankingPages: RankedMovie[][] = [];
+    let nextRank = 1;
+    for (const page of [1, 2, 3]) {
+      const movies = parseRankingPage(
+        await fetchHtml(rankingUrl(page)),
+        nextRank,
+      );
+      rankingPages.push(movies);
+      nextRank += movies.length;
+    }
+    const discovered = rankingPages.flat();
+    if (discovered.length < 45)
+      throw new Error(`Incomplete ranking: ${discovered.length} cards`);
+    const uniqueMovies = [
+      ...discovered
+        .reduce((movies, movie) => {
+          const existing = movies.get(movie.url);
+          if (!existing || movie.rank < existing.rank)
+            movies.set(movie.url, movie);
+          return movies;
+        }, new Map<string, RankedMovie>())
+        .values(),
+    ];
+    await writeStatus({
+      state: 'refreshing',
+      message: `Reading ${uniqueMovies.length} movie pages`,
+    });
+    const movieActresses = await mapLimit(uniqueMovies, 2, async (movie) => ({
+      movie,
+      actressUrls: parseMovieActressUrls(await fetchHtml(movie.url)),
+    }));
+    const actressesToMovies = new Map<string, RankedMovie[]>();
+    movieActresses.forEach(({ movie, actressUrls }) =>
+      actressUrls.forEach((url) => {
+        const list = actressesToMovies.get(url) ?? [];
+        list.push(movie);
+        actressesToMovies.set(url, list);
+      }),
+    );
+    if (!actressesToMovies.size) throw new Error('No actresses discovered');
+    const snapshotId = `${new Date().toISOString().replace(/[:.]/g, '-').toLowerCase()}-${randomUUID().slice(0, 8)}`;
+    staging = await makeStaging(snapshotId);
+    await writeStatus({
+      state: 'refreshing',
+      message: `Reading ${actressesToMovies.size} actress profiles`,
+    });
+    const profiles = await mapLimit(
+      [...actressesToMovies.entries()],
+      2,
+      async ([sourceUrl, movies]) => {
+        const profile = parseActressProfile(
+          await fetchHtml(sourceUrl),
+          sourceUrl,
+        );
+        const image = profile.imageUrl && safeImageUrl(profile.imageUrl);
+        if (!image) return { ...profile, movies } satisfies ProfileWithMovies;
+        try {
+          const download = await fetchImage(image.href);
+          const filename = `${profile.id}.${extensionFor(download.contentType)}`;
+          await writeFile(join(staging, 'images', filename), download.bytes);
+          return {
+            ...profile,
+            movies,
+            imagePath: `/actress-cache/snapshots/${snapshotId}/images/${filename}`,
+          } satisfies ProfileWithMovies;
+        } catch (error) {
+          console.warn(
+            `[jav-crawler] Skipping image for ${profile.id}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+          return { ...profile, movies } satisfies ProfileWithMovies;
+        }
+      },
+    );
+    const actresses = assignFoodAliases(
+      assignTiers(profilesWithImages(profiles), discovered.length),
+      createSeededRandom(snapshotId),
+    );
+    if (actresses.length < 5) throw new Error('Too few valid actresses');
+    const snapshot: ActressSnapshot = {
+      schemaVersion: SNAPSHOT_SCHEMA_VERSION,
+      snapshotId,
+      createdAt: new Date().toISOString(),
+      source: {
+        url: 'https://jav.guru/?s=&orderby=views-monthly&order=DESC&category_name=jav',
+        orderBy: 'views-monthly',
+        category: 'jav',
+        pages: 3,
+        listEntries: discovered.length,
+        uniqueMovies: uniqueMovies.length,
+      },
+      actresses,
+    };
+    await writeFile(
+      join(staging, 'snapshot.json'),
+      JSON.stringify(snapshot),
+      'utf8',
+    );
+    await publishSnapshot(snapshot, staging);
+    staging = '';
+    return true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('[jav-crawler]', message);
+    try {
+      await writeStatus({ state: 'error', message: message.slice(0, 280) });
+    } catch {}
+    return false;
+  } finally {
+    try {
+      if (staging) await rm(staging, { recursive: true, force: true });
+    } finally {
+      await release();
+    }
+  }
+}

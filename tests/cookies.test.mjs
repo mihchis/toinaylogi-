@@ -33,10 +33,10 @@ try {
     },
   };
   test('Unicode preferences roundtrip with scoped secure cookies', () => {
-    api.writeCookie('pool', { name: 'Bún chả', disabled: [1, 2] });
+    api.writeCookie('pool', { name: 'Demo Star', disabled: ['demo'] });
     assert.deepEqual(api.readCookie('pool'), {
-      name: 'Bún chả',
-      disabled: [1, 2],
+      name: 'Demo Star',
+      disabled: ['demo'],
     });
     assert.match(
       writes.at(-1),
@@ -46,20 +46,20 @@ try {
   });
   test('Oversized value leaves previous saved pool intact', () => {
     const old = api.readCookie('pool');
-    assert.throws(() => api.writeCookie('pool', { name: '🥗'.repeat(1000) }));
+    assert.throws(() => api.writeCookie('pool', { name: '★'.repeat(1000) }));
     assert.deepEqual(api.readCookie('pool'), old);
   });
   test('Malformed cookie fails closed', () => {
-    jar.set('tnag-community-v1-pool', '%bad');
+    jar.set('tnlg-v1-pool', '%bad');
     assert.equal(api.readCookie('pool'), null);
   });
   test('Blocked cookies report failure instead of claiming save', () => {
     blocked = true;
-    assert.throws(() => api.writeCookie('pool', { name: 'Phở' }));
+    assert.throws(() => api.writeCookie('pool', { name: 'Demo' }));
     blocked = false;
   });
   test('Clear removes only selected app preference', () => {
-    api.writeCookie('pool', { name: 'Phở' });
+    api.writeCookie('pool', { name: 'Demo' });
     api.writeCookie('language', 'vi');
     api.clearCookie('pool');
     assert.equal(api.readCookie('pool'), null);

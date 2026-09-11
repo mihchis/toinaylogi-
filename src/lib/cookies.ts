@@ -1,4 +1,4 @@
-const prefix = 'tnag-community-v1-';
+const prefix = 'tnlg-v1-';
 const path = '/';
 export function readCookie<T>(key: string): T | null {
   try {
@@ -16,7 +16,7 @@ export function writeCookie(key: string, value: unknown): void {
   const encoded = encodeURIComponent(JSON.stringify(value));
   if (encoded.length > 3500)
     throw new Error(
-      'Danh sách quá lớn để lưu bằng cookie. Hãy giảm số món tự thêm. / Too much data for one cookie.',
+      'Lựa chọn quá lớn để lưu bằng cookie. / Preferences are too large for a cookie.',
     );
   document.cookie = `${prefix}${key}=${encoded}; Path=${path}; Max-Age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
   if (!document.cookie.split('; ').includes(`${prefix}${key}=${encoded}`))

@@ -1,59 +1,38 @@
-# Trưa Nay Ăn Gì 🍜
+# Tối Nay Lọ Gì? 🎰
 
 **Tiếng Việt** · [English](README.en.md)
 
-**Website chính thức: [truanayangi.com](https://truanayangi.com/)**
-
-Chưa biết ăn gì trưa nay? Mở hòm, quay món và để bữa trưa có chút bất ngờ.
-
-Đây là phiên bản cộng đồng chạy trên máy của bạn, không cần đăng nhập hay backend. Bạn có thể lọc món, thêm danh sách món riêng và lưu sở thích ngay trong trình duyệt.
+Ứng dụng local mở hòm để chọn một nữ diễn viên JAV. Pool được Next.js server trên máy crawl từ xếp hạng lượt xem tháng của JAV.Guru (ba trang đầu) và làm mới tối đa mỗi tuần.
 
 ## Chạy trên máy
 
-Cần **Node.js 22.12+** và phiên bản **pnpm** ghi trong [package.json](package.json).
+Cần Node.js 22.12+ và pnpm theo `package.json`.
 
 ```sh
-git clone https://github.com/truanayangi-com/truanayangi.git
-cd truanayangi
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Mở [127.0.0.1:3000](http://127.0.0.1:3000). Không cần tạo `.env` hay cấu hình dịch vụ bên ngoài. Nếu cổng đang bận, chạy `pnpm dev -- --port 5188`.
-
-Các lệnh phát triển:
+Mở [127.0.0.1:3000](http://127.0.0.1:3000). Lần đầu server crawl nền; UI sẽ chờ snapshot cục bộ, không gọi JAV.Guru từ browser. Dùng `pnpm data:refresh` để buộc làm mới/dò lỗi. Crawl chỉ publish snapshot mới khi toàn bộ list, phim, hồ sơ và ảnh hợp lệ; cache hiện tại vẫn được giữ khi lỗi.
 
 ```sh
-pnpm test           # Chạy kiểm tra logic
-pnpm typecheck      # Kiểm tra TypeScript
-pnpm lint           # Kiểm tra Next.js/ESLint
-pnpm format         # Định dạng mã bằng Prettier
-pnpm format:check   # Kiểm tra định dạng
-pnpm build          # Tạo production build
-pnpm start          # Chạy production build tại http://127.0.0.1:3000
-pnpm preview        # Alias của pnpm start
+pnpm test
+pnpm typecheck
+pnpm lint
+pnpm build
+pnpm preview
 ```
 
-Các máy chủ Next.js chỉ lắng nghe trên `127.0.0.1`. Hãy chạy `pnpm build` trước `pnpm start` hoặc `pnpm preview`. Sau khi cài dependencies, ứng dụng tải tài nguyên từ máy; các liên kết bên ngoài chỉ mở khi bạn bấm vào.
+Server chỉ lắng nghe loopback. Sau khi snapshot đã có, browser chỉ tải JSON và ảnh local; JAV.Guru/X/Instagram chỉ mở qua liên kết bạn bấm.
 
-## Dữ liệu của bạn
+## Dữ liệu cục bộ
 
-Sở thích, danh sách món và lượt quay tự lưu bằng cookie trong trình duyệt hiện tại. Xóa cookie sẽ đặt lại dữ liệu; dữ liệu không đồng bộ giữa các thiết bị. Lượt quay hiển thị là của riêng trình duyệt này.
+- Snapshot và ảnh crawler nằm trong `public/actress-cache/` (gitignored).
+- Tiến trình/lock tạm nằm trong `.cache/jav-crawler/` (gitignored).
+- Lọc tier, loại trừ diễn viên, ngôn ngữ và số lượt mở nằm trong cookie host-only, versioned, có giới hạn. Đây là số lượt mở của riêng browser, không phải tổng cộng đồng.
 
-Nếu cookie bị chặn hoặc danh sách món quá lớn, ứng dụng sẽ báo chưa lưu.
+## GitHub Pages, đóng góp và nguồn gốc
 
-## GitHub Pages và website chính
+GitHub Pages chỉ redirect đến https://truanayangi.com/; chỉ `pages-redirect/` được publish lên `gh-pages`, còn app này chạy local từ `main`. Chào đón issue/fork PR vào `main` bằng Việt hoặc Anh, kể cả draft PR.
 
-GitHub Pages chỉ chuyển hướng đến https://truanayangi.com/. Đây là cách giữ chức năng đồng nhất: người truy cập luôn dùng cùng frontend production, API và cookie đăng nhập cùng origin, thay vì một ứng dụng tĩnh thứ hai dễ lệch tính năng hoặc mất đăng nhập khi tải lại. Chỉ xuất bản `pages-redirect/` lên `gh-pages`; không đưa bản build local lên đó. Các sửa đổi UI tĩnh và chuyển động vòng quay dùng chung cần được cập nhật đồng thời ở repo này và frontend production riêng tư.
-
-## Đóng góp
-
-Chào đón mọi người [báo lỗi, đề xuất ý tưởng](https://github.com/truanayangi-com/truanayangi/issues/new) hoặc fork repo và [gửi PR vào `main`](https://github.com/truanayangi-com/truanayangi/compare). Bạn có thể dùng tiếng Việt hoặc tiếng Anh, mở draft PR để trao đổi, không cần được duyệt issue trước hay tham gia tổ chức.
-
-Chỉ cần mô tả rõ thay đổi và cách đã kiểm tra. Với thay đổi code, hãy chạy test và build khi có thể; maintainer sẽ hỗ trợ và review trước khi merge. Giữ thông tin bí mật ngoài repo và ghi công nguồn sử dụng.
-
-## Nguồn gốc
-
-Repo được chuyển từ `nagisanzenin/truanayangi`, giữ nguyên lịch sử Git và đóng góp cộng đồng. Xem [ghi công tác giả và tài nguyên](ATTRIBUTION.md).
-
-[GitHub Pages](https://truanayangi-com.github.io/truanayangi/) chuyển hướng đến website chính thức. Chỉ thư mục `pages-redirect/` được xuất bản lên `gh-pages`; mã ứng dụng trong repo dành cho việc chạy trên máy.
+Repo giữ lịch sử từ `nagisanzenin/truanayangi`. Xem nguồn asset tại [ATTRIBUTION.md](ATTRIBUTION.md).

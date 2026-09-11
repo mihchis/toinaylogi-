@@ -8,123 +8,45 @@ export const TICK_SECONDS = [
   1.351, 1.62, 1.701, 1.786, 1.872, 2.003, 2.154, 2.313, 2.466, 2.615, 2.773,
   2.941, 3.104, 3.339, 3.63, 3.953, 4.385, 5.004,
 ].sort((a, b) => a - b);
-// Grouped iPOS/Nestlé 2025 lunch spending implies roughly 49–52k under
-// documented endpoint assumptions. This is a proxy, not an office-only mean.
-export const TARGET_LUNCH_PRICE = 50;
-// Product choice: spread in log-price space, not measured diner behavior.
-export const LOG_PRICE_SPREAD = 0.35;
-export function caseEase(progress: number) {
-  const p = Math.max(0, Math.min(1, progress));
-  let lo = 0,
-    hi = 1;
-  for (let i = 0; i < 30; i++) {
-    const t = (lo + hi) / 2,
-      u = 1 - t,
-      x = 3 * u * u * t * 0.075 + 3 * u * t * t * 0.165 + t * t * t;
-    if (x < p) lo = t;
-    else hi = t;
-  }
-  const t = (lo + hi) / 2,
-    u = 1 - t;
-  return 3 * u * u * t * 0.82 + 3 * u * t * t + t * t * t;
-}
-type PricedMeal = { price: number; rarity: number };
-export function createFoodSelector<T extends PricedMeal>(
-  population: T[],
-  target = TARGET_LUNCH_PRICE,
-) {
-  if (!population.length) throw new Error('No meals in population');
-  if (!Number.isFinite(target) || target <= 0)
-    throw new Error('Invalid target');
-  if (population.some((f) => !Number.isFinite(f.price) || f.price <= 0))
-    throw new Error('Invalid meal price');
-  const min = Math.min(...population.map((f) => f.price)),
-    max = Math.max(...population.map((f) => f.price));
-  if (target < min || target > max)
-    throw new Error('Target mean is outside feasible meal prices');
-  // Equal total prior weight per distinct price, split among meals at that price.
-  // Adding variants at an existing price cannot inflate its aggregate probability.
-  const counts = new Map<number, number>();
-  population.forEach((f) =>
-    counts.set(f.price, (counts.get(f.price) || 0) + 1),
+
+export const TIER_DROP_RATES = [0.6, 0.25, 0.1, 0.04, 0.01] as const;
+type Tiered = { tier: number };
+
+export function chooseTiered<T extends Tiered>(
+  items: T[],
+  random = Math.random,
+): T {
+  if (!items.length) throw new Error('No eligible actresses');
+  const groups = TIER_DROP_RATES.map((_, tier) =>
+    items.filter((item) => item.tier === tier),
   );
-  const logs = population.map((f) => Math.log(f.price / 50));
-  const prior = logs.map(
-    (x, i) =>
-      -0.5 * (x / LOG_PRICE_SPREAD) ** 2 -
-      Math.log(counts.get(population[i].price)!),
+  const total = TIER_DROP_RATES.reduce(
+    (sum, rate, tier) => sum + (groups[tier].length ? rate : 0),
+    0,
   );
-  function weights(tilt: number) {
-    const logits = logs.map((x, i) => prior[i] + tilt * x),
-      anchor = Math.max(...logits);
-    const raw = logits.map((x) => Math.exp(x - anchor)),
-      sum = raw.reduce((s, x) => s + x, 0);
-    return raw.map((x) => x / sum);
-  }
-  const mean = (w: number[]) =>
-    population.reduce((s, f, i) => s + f.price * w[i], 0);
-  let raw: number[];
-  if (target === min || target === max) {
-    const n = counts.get(target)!;
-    raw = population.map((f) => (f.price === target ? 1 / n : 0));
-  } else {
-    let lo = -1,
-      hi = 1;
-    while (mean(weights(lo)) > target) lo *= 2;
-    while (mean(weights(hi)) < target) hi *= 2;
-    for (let i = 0; i < 80; i++) {
-      const mid = (lo + hi) / 2;
-      if (mean(weights(mid)) < target) lo = mid;
-      else hi = mid;
-    }
-    raw = weights((lo + hi) / 2);
-  }
-  const probabilities = new Map(population.map((f, i) => [f, raw[i]]));
-  function weighted(items: T[]) {
-    if (!items.length) throw new Error('No eligible meals');
-    const w = items.map((f) => {
-      const p = probabilities.get(f);
-      if (p === undefined) throw new Error('Unknown meal');
-      return p;
-    });
-    const sum = w.reduce((s, p) => s + p, 0);
-    if (sum <= 0) throw new Error('Eligible meals have no probability');
-    return { w, sum };
-  }
-  return {
-    probabilities,
-    expectedPrice: mean(raw),
-    meanFor(items: T[]) {
-      const { w, sum } = weighted(items);
-      return items.reduce((s, f, i) => s + f.price * w[i], 0) / sum;
-    },
-    choose(items: T[], random = Math.random): T {
-      const { w, sum } = weighted(items);
-      const draw = random();
-      if (!Number.isFinite(draw) || draw < 0 || draw >= 1)
+  if (!total) throw new Error('No eligible tiers');
+  const tierDraw = random();
+  if (!Number.isFinite(tierDraw) || tierDraw < 0 || tierDraw >= 1)
+    throw new Error('Random draw must be in [0,1)');
+  let draw = tierDraw * total;
+  for (let tier = 0; tier < groups.length; tier++) {
+    if (!groups[tier].length) continue;
+    draw -= TIER_DROP_RATES[tier];
+    if (draw < 0) {
+      const pick = random();
+      if (!Number.isFinite(pick) || pick < 0 || pick >= 1)
         throw new Error('Random draw must be in [0,1)');
-      let remaining = draw * sum;
-      for (let i = 0; i < items.length; i++)
-        if ((remaining -= w[i]) < 0) return items[i];
-      for (let i = items.length - 1; i >= 0; i--) if (w[i] > 0) return items[i];
-      throw new Error('Invalid probability total');
-    },
-  };
-}
-export function stopFraction(random = Math.random) {
-  return (Math.floor(random() * 81) + 10) / 100;
+      return groups[tier][Math.floor(pick * groups[tier].length)];
+    }
+  }
+  for (let tier = groups.length - 1; tier >= 0; tier--) {
+    if (groups[tier].length) return groups[tier][groups[tier].length - 1];
+  }
+  throw new Error('No eligible tiers');
 }
 
-export function priceRarity(priceInThousands: number) {
-  return priceInThousands <= 40
-    ? 0
-    : priceInThousands <= 65
-      ? 1
-      : priceInThousands <= 100
-        ? 2
-        : priceInThousands <= 130
-          ? 3
-          : 4;
+export function stopFraction(random = Math.random) {
+  return (Math.floor(random() * 81) + 10) / 100;
 }
 
 // Cosmetic motion is independent of reward selection. Every profile is monotonic
