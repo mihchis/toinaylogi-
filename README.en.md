@@ -4,6 +4,8 @@
 
 A local case-opening app that selects a XXX actress. Its local Next.js server crawls the first three pages of XXX.Guru's monthly-view ranking, best-effort enriches profiles from AvBase, and refreshes the pool no more than weekly.
 
+<video src="assets/promo.mp4" controls="controls" muted="muted" width="100%"></video>
+
 ## Run locally
 
 Node.js 22.12+ and the pnpm version in `package.json` are required.

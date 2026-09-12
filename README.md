@@ -4,6 +4,8 @@
 
 Ứng dụng local mở hòm để chọn một nữ diễn viên. Pool được Next.js server trên máy crawl từ xếp hạng lượt xem tháng của XXX.Guru (ba trang đầu), enrich best-effort hồ sơ từ XXBase và làm mới tối đa mỗi tuần.
 
+<video src="assets/promo.mp4" controls="controls" muted="muted" width="100%"></video>
+
 ## Chạy trên máy
 
 Cần Node.js 22.12+ và pnpm theo `package.json`.
