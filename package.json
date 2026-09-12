@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --hostname 127.0.0.1",
+    "dev": "next dev",
     "build": "next build",
-    "start": "next start --hostname 127.0.0.1",
-    "preview": "next start --hostname 127.0.0.1",
+    "start": "next start",
+    "preview": "next start",
     "data:refresh": "tsx scripts/refresh-actress-data.ts",
     "test": "node --test tests/cookies.test.mjs tests/case-mechanics.test.mjs && tsx --test tests/crawler-parser.test.ts tests/food-aliases.test.ts",
     "typecheck": "tsc --noEmit",
