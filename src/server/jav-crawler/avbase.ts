@@ -185,9 +185,15 @@ export function mergeAvBaseProfile(
   avbase: AvBaseProfile,
   avBaseUrl: string,
 ): ParsedProfile {
+  const normalizeUrl = (url: string) =>
+    url.trim().toLowerCase().replace(/\/+$/, '');
   const socialLinks = [...avbase.socialLinks, ...base.socialLinks].filter(
     (link, index, all) =>
-      all.findIndex((other) => other.url === link.url) === index,
+      all.findIndex(
+        (other) =>
+          other.label === link.label &&
+          normalizeUrl(other.url) === normalizeUrl(link.url),
+      ) === index,
   );
   return {
     ...base,

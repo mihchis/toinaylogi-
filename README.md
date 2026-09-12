@@ -2,7 +2,7 @@
 
 **Tiếng Việt** · [English](README.en.md)
 
-Ứng dụng local mở hòm để chọn một nữ diễn viên JAV. Pool được Next.js server trên máy crawl từ xếp hạng lượt xem tháng của JAV.Guru (ba trang đầu), enrich best-effort hồ sơ từ AvBase và làm mới tối đa mỗi tuần.
+Ứng dụng local mở hòm để chọn một nữ diễn viên. Pool được Next.js server trên máy crawl từ xếp hạng lượt xem tháng của XXX.Guru (ba trang đầu), enrich best-effort hồ sơ từ XXBase và làm mới tối đa mỗi tuần.
 
 ## Chạy trên máy
 
@@ -13,7 +13,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Mở [127.0.0.1:3000](http://127.0.0.1:3000). Lần đầu server crawl nền; UI sẽ chờ snapshot cục bộ, không gọi JAV.Guru từ browser. Dùng `pnpm data:refresh` để buộc làm mới/dò lỗi. Crawl chỉ publish snapshot mới khi toàn bộ list, phim, hồ sơ và ảnh hợp lệ; cache hiện tại vẫn được giữ khi lỗi.
+Mở [127.0.0.1:3000](http://127.0.0.1:3000). Lần đầu server crawl nền; UI sẽ chờ snapshot cục bộ. Dùng `pnpm data:refresh` để buộc làm mới/dò lỗi. Crawl chỉ publish snapshot mới khi toàn bộ list, phim, hồ sơ và ảnh hợp lệ; cache hiện tại vẫn được giữ khi lỗi.
 
 ```sh
 pnpm test
@@ -23,12 +23,12 @@ pnpm build
 pnpm preview
 ```
 
-Server chỉ lắng nghe loopback. Khi enrich, server dùng `impit` với Chrome TLS fingerprint chỉ cho request AvBase; lỗi/403/429 từ AvBase không ngăn snapshot JAV.Guru mới được publish. Sau khi snapshot đã có, browser chỉ tải JSON và ảnh local; JAV.Guru/AvBase/Wikipedia/X/Instagram/TikTok chỉ mở qua liên kết bạn bấm.
+Server chỉ lắng nghe loopback. Khi enrich, server dùng `impit` với Chrome TLS fingerprint chỉ cho request AvBase. Sau khi snapshot đã có, browser chỉ tải JSON và ảnh local; XXX.Guru/AvBase/Wikipedia/X/Instagram/TikTok chỉ mở qua liên kết bạn bấm.
 
 ## Dữ liệu cục bộ
 
 - Snapshot v4 và ảnh crawler nằm trong `public/actress-cache/` (gitignored); snapshot v3 cũ vẫn đọc được trong lúc refresh.
-- JAV.Guru quyết định ranking/tier; AvBase chỉ bổ sung best-effort tên Nhật/ruby, ngày sinh, số đo, cup, nhóm máu, quê quán, sở thích, social, Wikipedia và ảnh DMM được tải lại vào cache local.
+- XXX.Guru quyết định ranking/tier; XXBase chỉ bổ sung best-effort tên Nhật/ruby, ngày sinh, số đo, cup, nhóm máu, quê quán, sở thích, social, Wikipedia và ảnh DMM được tải lại vào cache local.
 - Tiến trình/lock tạm nằm trong `.cache/jav-crawler/` (gitignored).
 - Lọc tier, loại trừ diễn viên, ngôn ngữ và số lượt mở nằm trong cookie host-only, versioned, có giới hạn. Đây là số lượt mở của riêng browser, không phải tổng cộng đồng.
 
@@ -36,4 +36,4 @@ Server chỉ lắng nghe loopback. Khi enrich, server dùng `impit` với Chrome
 
 GitHub Pages chỉ redirect đến https://truanayangi.com/; chỉ `pages-redirect/` được publish lên `gh-pages`, còn app này chạy local từ `main`. Chào đón issue/fork PR vào `main` bằng Việt hoặc Anh, kể cả draft PR.
 
-Repo giữ lịch sử từ `nagisanzenin/truanayangi`. Xem nguồn asset tại [ATTRIBUTION.md](ATTRIBUTION.md).
+Dự án lấy cảm hứng từ [nagisanzenin/truanayangi](https://github.com/nagisanzenin/truanayangi). Repo giữ lịch sử từ `nagisanzenin/truanayangi`. Xem nguồn asset tại [ATTRIBUTION.md](ATTRIBUTION.md).

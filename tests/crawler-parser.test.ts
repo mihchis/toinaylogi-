@@ -16,10 +16,10 @@ import {
 } from '../src/lib/actresses';
 
 const html = readFileSync(
-  new URL('./fixtures/jav-guru.html', import.meta.url),
+  new URL('./fixtures/xxx-guru.html', import.meta.url),
   'utf8',
 );
-test('synthetic JAV.Guru fixture locks expected parser contract', () => {
+test('synthetic XXX.Guru fixture locks expected parser contract', () => {
   const movies = parseRankingPage(html, 1);
   assert.equal(movies.length, 15);
   assert.deepEqual(parseMovieActressUrls(html), [

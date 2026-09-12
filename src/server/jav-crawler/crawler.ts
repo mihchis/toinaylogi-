@@ -40,7 +40,7 @@ export async function refreshActressData(force = false) {
     });
     const rankingPages: RankedMovie[][] = [];
     let nextRank = 1;
-    for (const page of [1, 2, 3]) {
+    for (const page of [1, 2, 3, 4, 5]) {
       const movies = parseRankingPage(
         await fetchHtml(rankingUrl(page)),
         nextRank,

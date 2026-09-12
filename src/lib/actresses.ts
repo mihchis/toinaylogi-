@@ -193,7 +193,7 @@ export function isSafeSocialLink(value: unknown, label?: SocialLabel) {
 function parseSocialLinks(value: unknown): SocialLink[] | null {
   if (!Array.isArray(value) || value.length > 8) return null;
   const links: SocialLink[] = [];
-  const urls = new Set<string>();
+  const seen = new Map<string, number>();
   for (const item of value) {
     if (!item || typeof item !== 'object') return null;
     const row = item as Record<string, unknown>;
@@ -204,8 +204,14 @@ function parseSocialLinks(value: unknown): SocialLink[] | null {
     const handle = optionalText(row.handle, 100);
     if (handle === null) return null;
     const url = row.url as string;
-    if (!urls.has(url)) {
-      urls.add(url);
+    const key = `${label}:${url.trim().toLowerCase().replace(/\/+$/, '')}`;
+    const existingIndex = seen.get(key);
+    if (existingIndex !== undefined) {
+      if (!links[existingIndex].handle && handle) {
+        links[existingIndex] = { label, url, handle };
+      }
+    } else {
+      seen.set(key, links.length);
       links.push({ label, url, ...(handle ? { handle } : {}) });
     }
   }

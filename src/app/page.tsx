@@ -6,6 +6,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AudioLines,
   Box,
+  CircleHelp,
   ExternalLink,
   Sparkles,
   Volume2,
@@ -34,6 +35,8 @@ import { PreferencesPanel } from '@/components/preferences-panel';
 import { CaseAudio } from '@/lib/case-audio';
 
 const colors = ['#4b69ff', '#8847ff', '#d32ce6', '#eb4b4b', '#e4ae39'];
+const reelStep = 254;
+const reelInitialOffset = -400;
 
 function formatBirthDate(value: string, language: Language) {
   const [year, month, day] = value.split('-').map(Number);
@@ -70,7 +73,7 @@ const Card = memo(function Card({
           '--rarity': colors[actress.tier],
           ...(slot === undefined
             ? {}
-            : { position: 'absolute', left: slot * 254 }),
+            : { position: 'absolute', left: slot * reelStep }),
         } as React.CSSProperties
       }
     >
@@ -147,19 +150,20 @@ export default function Home() {
     if (!eligible.length) {
       setReel([]);
       setVisibleStart(0);
-      position.current = -400;
+      position.current = reelInitialOffset;
       if (track.current)
         track.current.style.transform = `translate3d(${position.current}px,0,0)`;
       return;
     }
+    const firstSlot = Math.floor(Math.random() * eligible.length);
     setReel(
-      Array.from({ length: 12 }, (_, id) => ({
-        id,
-        actress: eligible[id % eligible.length],
-      })),
+      Array.from({ length: 12 }, (_, index) => {
+        const id = firstSlot + index;
+        return { id, actress: eligible[id % eligible.length] };
+      }),
     );
-    setVisibleStart(0);
-    position.current = -400;
+    setVisibleStart(firstSlot);
+    position.current = reelInitialOffset - firstSlot * reelStep;
     if (track.current)
       track.current.style.transform = `translate3d(${position.current}px,0,0)`;
   }, [eligible]);
@@ -182,7 +186,7 @@ export default function Home() {
     audio.current?.unlock();
     busy.current = true;
     const winner = chooseTiered(eligible);
-    const step = 254,
+    const step = reelStep,
       tileWidth = 240,
       width = viewport.current.clientWidth;
     const start = position.current;
@@ -289,7 +293,7 @@ export default function Home() {
     <div className="site-shell">
       <header>
         <Link href="/" className="brand">
-          <span className="brand-case">▣</span>
+          <CircleHelp className="brand-case" size={24} strokeWidth={2.5} />
           <span>
             TỐI NAY <b>LỌ GÌ?</b>
           </span>
@@ -320,7 +324,7 @@ export default function Home() {
           </button>
           <a
             className="github-button"
-            href="https://github.com/truanayangi-com/truanayangi"
+            href="https://github.com/zennomi/toinaylogi"
             target="_blank"
             rel="noreferrer"
             aria-label={t.github}
@@ -332,8 +336,16 @@ export default function Home() {
       <main>
         <div className="intro">
           <div>
-            <h1>{t.title}</h1>
-            <p>{t.subtitle}</p>
+            <h1>{t.subtitle}</h1>
+          </div>
+          <div className="stattrak-container" title={t.localCounterTitle}>
+            <div className="stattrak-badge">
+              <span className="stattrak-label">{t.stattrakLabel}</span>
+              <span className="stattrak-caption">{t.stattrakSpins}</span>
+              <span className="stattrak-digits">
+                {String(localSpins).padStart(6, '0')}
+              </span>
+            </div>
           </div>
         </div>
         {status.state === 'refreshing' && (
@@ -349,18 +361,9 @@ export default function Home() {
         {!eligible.length && (
           <p className="preferences-message">{t.noEligible}</p>
         )}
-        <div className="stattrak-container" title={t.localCounterTitle}>
-          <div className="stattrak-badge">
-            <span className="stattrak-label">{t.stattrakLabel}</span>
-            <span className="stattrak-caption">{t.stattrakSpins}</span>
-            <span className="stattrak-digits">
-              {String(localSpins).padStart(6, '0')}
-            </span>
-          </div>
-        </div>
         <div className="cs-case-heading">
           <div className="cs-case-emblem" aria-hidden="true">
-            <Box size={24} />
+            <Box size={20} />
           </div>
           <div className="cs-case-info">
             <span className="cs-case-subtitle">{t.crateCollection}</span>
@@ -431,7 +434,6 @@ export default function Home() {
           <DialogContent className="winner-dialog" showCloseButton={false}>
             {result && (
               <>
-                <span className="winner-label">{t.newItem}</span>
                 <DialogTitle className="winner-title">
                   {result.name}
                 </DialogTitle>
@@ -443,8 +445,7 @@ export default function Home() {
                   </p>
                 )}
                 <DialogDescription className="winner-description">
-                  {t.tiers[result.tier]} · {t.score}: {result.score} ·{' '}
-                  {result.appearances} {t.appearances}
+                  {t.tiers[result.tier]}
                 </DialogDescription>
                 <div
                   className="winner-art"
@@ -521,9 +522,9 @@ export default function Home() {
                 </div>
                 {result.socialLinks.length > 0 && (
                   <div className="winner-socials">
-                    {result.socialLinks.map((social) => (
+                    {result.socialLinks.map((social, index) => (
                       <a
-                        key={social.url}
+                        key={`${social.label}-${social.url}-${index}`}
                         href={social.url}
                         target="_blank"
                         rel="noreferrer"
@@ -535,26 +536,15 @@ export default function Home() {
                     ))}
                   </div>
                 )}
-                {(result.avBaseUrl || result.wikipediaUrl) && (
+                {result.wikipediaUrl && (
                   <div className="winner-socials winner-reference-links">
-                    {result.avBaseUrl && (
-                      <a
-                        href={result.avBaseUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {t.avBaseProfile} <ExternalLink size={12} />
-                      </a>
-                    )}
-                    {result.wikipediaUrl && (
-                      <a
-                        href={result.wikipediaUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {t.wikipedia} <ExternalLink size={12} />
-                      </a>
-                    )}
+                    <a
+                      href={result.wikipediaUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {t.wikipedia} <ExternalLink size={12} />
+                    </a>
                   </div>
                 )}
                 <div className="winner-actions">
@@ -625,16 +615,28 @@ export default function Home() {
               }).format(new Date(snapshot.createdAt))}
             </span>
           </div>
-          <span>
-            {t.adultNote} {t.footer}{' '}
-            <a
-              href="https://github.com/sourcesounds/csgo"
-              target="_blank"
-              rel="noreferrer"
-            >
-              SourceSounds
-            </a>
-          </span>
+          <div className="footer-right">
+            <span>
+              {t.inspiredBy}{' '}
+              <a
+                href="https://github.com/nagisanzenin/truanayangi"
+                target="_blank"
+                rel="noreferrer"
+              >
+                nagisanzenin/truanayangi
+              </a>
+            </span>
+            <span>
+              {t.adultNote} {t.footer}{' '}
+              <a
+                href="https://github.com/sourcesounds/csgo"
+                target="_blank"
+                rel="noreferrer"
+              >
+                SourceSounds
+              </a>
+            </span>
+          </div>
         </footer>
       </main>
     </div>
