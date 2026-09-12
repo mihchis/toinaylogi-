@@ -12,6 +12,8 @@ Cần Node.js 22.12+ và pnpm theo `package.json`.
 
 ```sh
 pnpm install --frozen-lockfile
+cp .env.example .env
+redis-server
 pnpm dev
 ```
 
@@ -32,7 +34,9 @@ Server chỉ lắng nghe loopback. Khi enrich, server dùng `impit` với Chrome
 - Snapshot v4 và ảnh crawler nằm trong `public/actress-cache/` (gitignored); snapshot v3 cũ vẫn đọc được trong lúc refresh.
 - XXX.Guru quyết định ranking/tier; XXBase chỉ bổ sung best-effort tên Nhật/ruby, ngày sinh, số đo, cup, nhóm máu, quê quán, sở thích, social, Wikipedia và ảnh DMM được tải lại vào cache local.
 - Tiến trình/lock tạm nằm trong `.cache/jav-crawler/` (gitignored).
-- Lọc tier, loại trừ diễn viên, ngôn ngữ và số lượt mở nằm trong cookie host-only, versioned, có giới hạn. Đây là số lượt mở của riêng browser, không phải tổng cộng đồng.
+- Lọc tier, loại trừ diễn viên, ngôn ngữ, lựa chọn gần nhất và số lượt mở local nằm trong cookie host-only, versioned, có giới hạn. Số local này chỉ thuộc browser hiện tại.
+- Bộ đếm `LƯỢT MỞ TOÀN SERVER` là số lượt mở hòm đã hoàn tất, được dùng chung bởi các client kết nối cùng Next.js server local và lưu tại Redis bằng key `toinaylogi:opens`. Chuỗi kết nối nằm trong `REDIS_URL` ở `.env` (mặc định local tại `redis://localhost:6379` trong `.env.example`); nó không phải metric deployment/cộng đồng.
+- Redis không chạy thì vẫn mở hòm được và số local vẫn tăng; bộ đếm server sẽ hiện là không khả dụng và tự thử lại khi tải lại trang hoặc mở hòm lần sau.
 
 ## GitHub Pages, đóng góp và nguồn gốc
 

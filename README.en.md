@@ -12,6 +12,8 @@ Node.js 22.12+ and the pnpm version in `package.json` are required.
 
 ```sh
 pnpm install --frozen-lockfile
+cp .env.example .env
+redis-server
 pnpm dev
 ```
 
@@ -32,7 +34,9 @@ The server binds to loopback only. During enrichment, it uses `impit` with a Chr
 - Snapshot v4 and crawler images are in gitignored `public/actress-cache/`; existing v3 snapshots remain readable during refresh.
 - XXX.Guru determines ranking/tier. AvBase is a best-effort supplement for Japanese name/reading, birthday, measurements, cup, blood type, hometown, hobbies, social links, Wikipedia, and DMM images copied into the local cache.
 - Staging and locks are in gitignored `.cache/jav-crawler/`.
-- Tier filters, actress exclusions, language and local spin count are bounded, versioned host-only cookies. The counter belongs to this browser, never a community total.
+- Tier filters, actress exclusions, language, latest choice, and the local spin count use bounded, versioned host-only cookies. The local count belongs only to this browser.
+- `SERVER-WIDE OPENS` is the number of completed case openings shared by clients of the same local Next.js server. It is stored in Redis under `toinaylogi:opens`; the connection string is server-only `REDIS_URL` in `.env` (the `.env.example` default is local `redis://localhost:6379`). It is not a hosted/community deployment metric.
+- If Redis is down, cases and the local count still work. The server counter shows unavailable and retries when the page reloads or another case completes.
 
 ## GitHub Pages, contributing and history
 

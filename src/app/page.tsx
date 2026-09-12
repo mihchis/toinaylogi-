@@ -29,6 +29,7 @@ import { type Actress } from '@/lib/actresses';
 import { copy, type Language } from '@/lib/i18n';
 import { useActressSnapshot } from '@/hooks/use-actress-snapshot';
 import { useLocalSpinCount } from '@/hooks/use-local-spin-count';
+import { useServerSpinCount } from '@/hooks/use-server-spin-count';
 import { usePreferences } from '@/hooks/use-preferences';
 import { eligibleActresses } from '@/lib/actress-preferences';
 import { PreferencesPanel } from '@/components/preferences-panel';
@@ -90,6 +91,11 @@ export default function Home() {
   const { snapshot, status, error } = useActressSnapshot();
   const preferences = usePreferences();
   const { count: localSpins, recordSpin } = useLocalSpinCount();
+  const {
+    count: serverSpins,
+    status: serverSpinStatus,
+    increment: recordServerSpin,
+  } = useServerSpinCount();
   const [language, setLanguage] = useState<Language>('vi');
   const [sound, setSound] = useState(true);
   const [spinning, setSpinning] = useState(false);
@@ -249,6 +255,7 @@ export default function Home() {
         return;
       }
       recordSpin(winner);
+      void recordServerSpin();
       busy.current = false;
       setSpinning(false);
       setResult(winner);
@@ -338,12 +345,21 @@ export default function Home() {
           <div>
             <h1>{t.subtitle}</h1>
           </div>
-          <div className="stattrak-container" title={t.localCounterTitle}>
+          <div className="stattrak-container" title={t.serverCounterTitle}>
             <div className="stattrak-badge">
               <span className="stattrak-label">{t.stattrakLabel}</span>
               <span className="stattrak-caption">{t.stattrakSpins}</span>
-              <span className="stattrak-digits">
-                {String(localSpins).padStart(6, '0')}
+              <span
+                className="stattrak-digits"
+                aria-label={
+                  serverSpinStatus === 'unavailable'
+                    ? t.serverCounterUnavailable
+                    : undefined
+                }
+              >
+                {serverSpins === null
+                  ? '—'
+                  : String(serverSpins).padStart(6, '0')}
               </span>
             </div>
           </div>
@@ -400,7 +416,9 @@ export default function Home() {
         </section>
         <div className="control-bar">
           <div className="last-choice-slot">
-            <span className="last-choice-tag">{t.lastChoice}</span>
+            <span className="last-choice-tag">
+              {t.lastChoice} ({localSpins}):
+            </span>
             {lastChoice ? (
               <div className="last-choice-card">
                 <span
