@@ -550,10 +550,7 @@ export default function Home() {
                 <div className="winner-actions">
                   <a
                     className="find-button"
-                    href={
-                      result.avBaseUrl ||
-                      `https://www.google.com/search?q=${encodeURIComponent(result.nativeName || result.name)}`
-                    }
+                    href={`https://www.google.com/search?q=${encodeURIComponent(result.nativeName || result.name)}`}
                     target="_blank"
                     rel="noreferrer"
                   >
