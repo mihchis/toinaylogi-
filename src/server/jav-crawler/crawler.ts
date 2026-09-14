@@ -5,6 +5,7 @@ import { SNAPSHOT_SCHEMA_VERSION, type ActressSnapshot } from '@/lib/actresses';
 import { assignFoodAliases, createSeededRandom } from '@/lib/food-aliases';
 import { fetchHtml, fetchImage, mapLimit, safeImageUrl } from './fetch';
 import { createAvBaseEnricher, mergeAvBaseProfile } from './avbase';
+import { createMinnanoAvEnricher, mergeMinnanoAvProfile } from './minnano-av';
 import {
   parseActressProfile,
   parseMovieActressUrls,
@@ -85,6 +86,7 @@ export async function refreshActressData(force = false) {
       message: `Reading ${actressesToMovies.size} actress profiles`,
     });
     const avbase = createAvBaseEnricher();
+    const minnano = createMinnanoAvEnricher();
     const profiles = await mapLimit(
       [...actressesToMovies.entries()],
       2,
@@ -94,12 +96,23 @@ export async function refreshActressData(force = false) {
           sourceUrl,
         );
         const enriched = await avbase.lookup(javProfile);
-        const profile =
+        let profile =
           enriched.kind === 'matched'
             ? mergeAvBaseProfile(javProfile, enriched.profile, enriched.url)
             : javProfile;
         if (enriched.kind === 'unavailable' || enriched.kind === 'malformed')
           console.warn(`[jav-crawler] AvBase: ${enriched.message}`);
+
+        const minnanoEnriched = await minnano.lookup(profile);
+        if (minnanoEnriched.kind === 'matched') {
+          profile = mergeMinnanoAvProfile(
+            profile,
+            minnanoEnriched.profile,
+            minnanoEnriched.url,
+          );
+        } else if (minnanoEnriched.kind === 'unavailable') {
+          console.warn(`[jav-crawler] Minnano-AV: ${minnanoEnriched.message}`);
+        }
 
         const imageUrls = [...new Set([profile.imageUrl, javProfile.imageUrl])]
           .filter((value): value is string => typeof value === 'string')

@@ -9,6 +9,8 @@ import {
   CircleHelp,
   ExternalLink,
   Sparkles,
+  Star,
+  StarHalf,
   Volume2,
   VolumeX,
 } from 'lucide-react';
@@ -34,6 +36,8 @@ import { usePreferences } from '@/hooks/use-preferences';
 import { eligibleActresses } from '@/lib/actress-preferences';
 import { PreferencesPanel } from '@/components/preferences-panel';
 import { CaseAudio } from '@/lib/case-audio';
+import { TAG_VI_TO_EN } from '@/lib/tag-translations';
+import { isDirectCardDialogEnabled } from '@/lib/direct-card-dialog';
 
 const colors = ['#4b69ff', '#8847ff', '#d32ce6', '#eb4b4b', '#e4ae39'];
 const reelStep = 254;
@@ -44,6 +48,61 @@ function formatBirthDate(value: string, language: Language) {
   return new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-US', {
     dateStyle: 'long',
   }).format(new Date(year, month - 1, day));
+}
+
+function StarRating({
+  score,
+  showScore = true,
+  max = 5,
+}: {
+  score: number;
+  showScore?: boolean;
+  max?: number;
+}) {
+  const starScore = Math.min(max, Math.max(0, score / 2));
+  return (
+    <div
+      className="star-rating"
+      title={`${score.toFixed(2)}/10 (${starScore.toFixed(2)}/${max})`}
+    >
+      <div className="star-icons" aria-hidden="true">
+        {[1, 2, 3, 4, 5].map((i) => {
+          if (starScore >= i - 0.25) {
+            return (
+              <Star
+                key={i}
+                size={13}
+                className="star-icon star-full"
+                fill="currentColor"
+                stroke="currentColor"
+              />
+            );
+          }
+          if (starScore >= i - 0.75) {
+            return (
+              <StarHalf
+                key={i}
+                size={13}
+                className="star-icon star-half"
+                fill="currentColor"
+                stroke="currentColor"
+              />
+            );
+          }
+          return (
+            <Star
+              key={i}
+              size={13}
+              className="star-icon star-empty"
+              stroke="currentColor"
+              fill="none"
+            />
+          );
+        })}
+      </div>
+      {showScore && <span className="star-score">{starScore.toFixed(1)}</span>}
+    </div>
+  );
 }
 
 function ActressImage({ actress, alt }: { actress: Actress; alt: string }) {
@@ -59,16 +118,32 @@ const Card = memo(function Card({
   language,
   small = false,
   slot,
+  onClick,
 }: {
   actress: Actress;
   language: Language;
   small?: boolean;
   slot?: number;
+  onClick?: () => void;
 }) {
   return (
     <div
-      className={`actress-card ${small ? 'small' : ''}`}
+      className={`actress-card ${small ? 'small' : ''} ${onClick ? 'clickable' : ''}`}
       data-slot-id={slot}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick ? actress.publicName : undefined}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
       style={
         {
           '--rarity': colors[actress.tier],
@@ -276,6 +351,17 @@ export default function Home() {
     frame.current = requestAnimationFrame(animate);
   }
 
+  const allowDirectCardDialog = isDirectCardDialogEnabled();
+
+  const handleCardClick = useCallback(
+    (actress: Actress) => {
+      if (!allowDirectCardDialog || spinning || busy.current) return;
+      setResult(actress);
+      setRevealed(true);
+    },
+    [allowDirectCardDialog, spinning],
+  );
+
   const inventory = useMemo(
     () =>
       [...eligible]
@@ -283,9 +369,17 @@ export default function Home() {
           (a, b) => b.tier - a.tier || a.publicName.localeCompare(b.publicName),
         )
         .map((actress) => (
-          <Card key={actress.id} actress={actress} language={language} small />
+          <Card
+            key={actress.id}
+            actress={actress}
+            language={language}
+            small
+            onClick={
+              allowDirectCardDialog ? () => handleCardClick(actress) : undefined
+            }
+          />
         )),
-    [eligible, language],
+    [eligible, language, allowDirectCardDialog, handleCardClick],
   );
   if (!snapshot)
     return (
@@ -455,9 +549,13 @@ export default function Home() {
                 <DialogTitle className="winner-title">
                   {result.name}
                 </DialogTitle>
-                {(result.nativeName || result.nameReading) && (
+                {(result.nativeName || result.nameReading || result.age) && (
                   <p className="winner-native-name">
-                    {[result.nativeName, result.nameReading]
+                    {[
+                      result.nativeName,
+                      result.nameReading,
+                      result.age ? `${result.age} ${t.ageUnit}` : null,
+                    ]
                       .filter(Boolean)
                       .join(' · ')}
                   </p>
@@ -474,55 +572,115 @@ export default function Home() {
                   <ActressImage actress={result} alt={result.name} />
                 </div>
                 {(result.birthDate ||
-                  result.age ||
                   result.heightCm ||
+                  result.debutYear ||
                   result.bustCm ||
                   result.waistCm ||
                   result.hipCm ||
                   result.cup ||
-                  result.bloodType) && (
+                  result.bloodType ||
+                  result.videoCount) && (
                   <div className="winner-details">
-                    {result.birthDate && (
-                      <div className="winner-detail">
-                        <span>{t.birthDate}</span>
-                        <strong>
-                          {formatBirthDate(result.birthDate, language)}
-                        </strong>
-                      </div>
-                    )}
-                    {!result.birthDate && result.age && (
-                      <div className="winner-detail">
-                        <span>{t.age}</span>
-                        <strong>{result.age}</strong>
-                      </div>
-                    )}
-                    {result.heightCm && (
-                      <div className="winner-detail">
-                        <span>{t.height}</span>
-                        <strong>{result.heightCm} cm</strong>
-                      </div>
-                    )}
-                    {(result.bustCm ||
-                      result.waistCm ||
-                      result.hipCm ||
-                      result.cup) && (
-                      <div className="winner-detail">
-                        <span>{t.measurements}</span>
-                        <strong>
-                          B{result.bustCm ?? '—'}
-                          {result.cup
-                            ? ` (${result.cup.replace(/-Cup$/i, '').trim()})`
-                            : ''}{' '}
-                          · W{result.waistCm ?? '—'} · H{result.hipCm ?? '—'} cm
-                        </strong>
-                      </div>
-                    )}
-                    {result.bloodType && (
-                      <div className="winner-detail">
-                        <span>{t.bloodType}</span>
-                        <strong>{result.bloodType}</strong>
-                      </div>
-                    )}
+                    <div className="winner-detail">
+                      <span>{t.profile}</span>
+                      <strong>
+                        {[
+                          result.birthDate
+                            ? formatBirthDate(result.birthDate, language)
+                            : null,
+                          result.heightCm ? `${result.heightCm} cm` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ') || '—'}
+                      </strong>
+                      {result.debutYear && (
+                        <small className="winner-subdetail">
+                          {`${t.debut}: ${result.debutYear}`}
+                        </small>
+                      )}
+                    </div>
+
+                    <div className="winner-detail">
+                      <span>{t.measurements}</span>
+                      <strong>
+                        {result.bustCm ||
+                        result.waistCm ||
+                        result.hipCm ||
+                        result.cup
+                          ? `B${result.bustCm ?? '—'}${result.cup ? ` (${result.cup.replace(/-Cup$/i, '').trim()})` : ''} · W${result.waistCm ?? '—'} · H${result.hipCm ?? '—'} cm`
+                          : '—'}
+                      </strong>
+                      {(result.bloodType || result.videoCount) && (
+                        <small className="winner-subdetail">
+                          {[
+                            result.bloodType
+                              ? `${t.bloodType}: ${result.bloodType}`
+                              : null,
+                            result.videoCount
+                              ? `${result.videoCount} ${t.videoCountUnit}`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </small>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {result.ratings && (
+                  <div className="winner-ratings-card">
+                    <div className="winner-ratings-header">
+                      <span className="winner-ratings-label">{t.ratings}</span>
+                      {result.ratings.overall !== undefined && (
+                        <div className="winner-rating-overall">
+                          <span className="overall-label">
+                            {t.overallScore}
+                          </span>
+                          <StarRating score={result.ratings.overall} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="winner-ratings-grid">
+                      {result.ratings.looks !== undefined && (
+                        <div className="winner-rating-item">
+                          <span className="rating-name">{t.looksScore}</span>
+                          <StarRating score={result.ratings.looks} />
+                        </div>
+                      )}
+                      {result.ratings.body !== undefined && (
+                        <div className="winner-rating-item">
+                          <span className="rating-name">{t.bodyScore}</span>
+                          <StarRating score={result.ratings.body} />
+                        </div>
+                      )}
+                      {result.ratings.charm !== undefined && (
+                        <div className="winner-rating-item">
+                          <span className="rating-name">{t.charmScore}</span>
+                          <StarRating score={result.ratings.charm} />
+                        </div>
+                      )}
+                      {result.ratings.eroticAppeal !== undefined && (
+                        <div className="winner-rating-item">
+                          <span className="rating-name">
+                            {t.eroticAppealScore}
+                          </span>
+                          <StarRating score={result.ratings.eroticAppeal} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {result.tags && result.tags.length > 0 && (
+                  <div className="winner-tags" aria-label={t.tags}>
+                    {result.tags.map((tag) => (
+                      <span key={tag} className="winner-tag">
+                        {language === 'en' && TAG_VI_TO_EN[tag]
+                          ? TAG_VI_TO_EN[tag]
+                          : tag}
+                      </span>
+                    ))}
                   </div>
                 )}
                 <div className="winner-profile">
@@ -554,15 +712,26 @@ export default function Home() {
                     ))}
                   </div>
                 )}
-                {result.wikipediaUrl && (
+                {(result.wikipediaUrl || result.minnanoAvUrl) && (
                   <div className="winner-socials winner-reference-links">
-                    <a
-                      href={result.wikipediaUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {t.wikipedia} <ExternalLink size={12} />
-                    </a>
+                    {result.wikipediaUrl && (
+                      <a
+                        href={result.wikipediaUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {t.wikipedia} <ExternalLink size={12} />
+                      </a>
+                    )}
+                    {result.minnanoAvUrl && (
+                      <a
+                        href={result.minnanoAvUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {t.minnanoAvProfile} <ExternalLink size={12} />
+                      </a>
+                    )}
                   </div>
                 )}
                 <div className="winner-actions">

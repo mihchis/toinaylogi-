@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio';
 import {
   canonicalJavUrl,
   isSafeSocialLink,
+  type ActressRatings,
   type SocialLink,
 } from '@/lib/actresses';
 
@@ -28,6 +29,10 @@ export type ParsedProfile = {
   hobby?: string;
   avBaseUrl?: string;
   wikipediaUrl?: string;
+  minnanoAvUrl?: string;
+  ratings?: ActressRatings;
+  tags?: string[];
+  debutYear?: number;
 };
 const compact = (value: string) =>
   value.replace(/\s+/g, ' ').trim().normalize('NFC');

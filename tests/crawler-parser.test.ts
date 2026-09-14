@@ -12,8 +12,16 @@ import {
 } from '../src/server/jav-crawler/scoring';
 import {
   SNAPSHOT_SCHEMA_VERSION,
+  canonicalMinnanoAvUrl,
   validateSnapshot,
 } from '../src/lib/actresses';
+import {
+  extractMinnanoIdentity,
+  matchesIdentity,
+  normalizeName,
+  parseMinnanoAvProfile,
+} from '../src/server/jav-crawler/minnano-av';
+import { translateTagToVietnamese } from '../src/lib/tag-translations';
 
 const html = readFileSync(
   new URL('./fixtures/xxx-guru.html', import.meta.url),
@@ -175,4 +183,172 @@ test('snapshot schema requires a same-tier food alias and an image path', () => 
     skipped: 0,
     blocked: 0,
   });
+});
+
+test('parses minnano-av quantitative ratings, translated tags, and debut year', () => {
+  const sampleHtml = `
+    <h1>彩月七緒 / Satsuki Nao</h1>
+    <table class="rate-table">
+      <tr><td class="t9">ルックス</td><td><img src="ebar.gif"></td><td class="t9">8.83</td></tr>
+      <tr><td class="t9">カラダ</td><td><img src="ebar.gif"></td><td class="t9">8.80</td></tr>
+      <tr><td class="t9">魅力</td><td><img src="ebar.gif"></td><td class="t9">9.07</td></tr>
+      <tr><td class="t9">ヌケる</td><td><img src="ebar.gif"></td><td class="t9">9.03</td></tr>
+      <tr><td class="t9"><b>総合評価</b></td><td><img src="ebar.gif"></td><td class="t9">9.07</td></tr>
+    </table>
+    <td><span>AV出演期間</span><p>2024年 -</p></td>
+    <td><span>デビュー作品</span><p>超大物新人 彩月七緒 AV DEBUT（2024年01月 25日）</p></td>
+    <div class="tagarea">
+      <a href="tag=3">巨乳</a>
+      <a href="tag=61">美人</a>
+      <a href="tag=9596">48kg</a>
+    </div>
+  `;
+
+  const parsed = parseMinnanoAvProfile(
+    sampleHtml,
+    'https://www.minnano-av.com/actress908789.html',
+  );
+  assert.equal(parsed.name, '彩月七緒');
+  assert.equal(parsed.debutYear, 2024);
+  assert.deepEqual(parsed.ratings, {
+    looks: 8.83,
+    body: 8.8,
+    charm: 9.07,
+    eroticAppeal: 9.03,
+    overall: 9.07,
+  });
+  assert.deepEqual(parsed.tags, ['Ngực khủng', 'Mỹ nhân', '48kg']);
+});
+
+test('translates tags to Vietnamese cleanly with composite tags and patterns', () => {
+  assert.deepEqual(translateTagToVietnamese('巨乳'), ['Ngực khủng']);
+  assert.deepEqual(translateTagToVietnamese('美人'), ['Mỹ nhân']);
+  assert.deepEqual(translateTagToVietnamese('パフィーニップル，美体，美肌'), [
+    'Nhũ hoa phồng',
+    'Dáng người tuyệt mỹ',
+    'Làn da mịn màng',
+  ]);
+  assert.deepEqual(translateTagToVietnamese('48kg'), ['48kg']);
+  assert.deepEqual(translateTagToVietnamese('20歳'), ['20 tuổi']);
+  assert.deepEqual(translateTagToVietnamese('両手両足タトゥー'), [
+    'Hình xăm tay chân',
+  ]);
+  assert.deepEqual(translateTagToVietnamese('タトゥー'), ['Hình xăm']);
+});
+
+test('distinguishes exact names and avoids substring mapping errors like Meguri vs Minoshima Meguri', () => {
+  const meguriHtml = `
+    <title>めぐり（めぐり）- AV女優プロフィール - みんなのAV</title>
+    <h1>めぐりめぐり / Meguri</h1>
+    <table><tr><td>別名 藤浦めぐ （ふじうらめぐ / Fujiura Megu）</td></tr></table>
+  `;
+  const minoshimaHtml = `
+    <title>美ノ嶋めぐり（みのしまめぐり）- AV女優プロフィール - みんなのAV</title>
+    <h1>美ノ嶋めぐりみのしまめぐり / Minoshima Meguri</h1>
+  `;
+
+  const meguriIdentity = extractMinnanoIdentity(meguriHtml)!;
+  const minoshimaIdentity = extractMinnanoIdentity(minoshimaHtml)!;
+
+  assert.ok(meguriIdentity);
+  assert.ok(minoshimaIdentity);
+
+  // Target actress: Meguri / めぐり
+  const targetCandidates = ['めぐり', 'Meguri', '藤浦めぐ'];
+
+  // Should match Meguri profile
+  assert.equal(matchesIdentity(targetCandidates, meguriIdentity), true);
+
+  // Must NOT match Minoshima Meguri!
+  assert.equal(matchesIdentity(targetCandidates, minoshimaIdentity), false);
+
+  // Nor normalizeName issue with macrons like Yūki Kanoha
+  assert.equal(normalizeName('Yūki Kanoha'), 'yukikanoha');
+  assert.equal(normalizeName('Yuki Kanoha'), 'yukikanoha');
+});
+
+test('canonicalMinnanoAvUrl validates valid and rejects invalid URLs', () => {
+  assert.equal(
+    canonicalMinnanoAvUrl(
+      'https://www.minnano-av.com/actress908789.html?foo=bar#baz',
+    ),
+    'https://www.minnano-av.com/actress908789.html',
+  );
+  assert.equal(
+    canonicalMinnanoAvUrl('https://minnano-av.com/actress123.html'),
+    'https://www.minnano-av.com/actress123.html',
+  );
+  assert.equal(
+    canonicalMinnanoAvUrl('https://www.minnano-av.com/other_page.html'),
+    null,
+  );
+  assert.equal(
+    canonicalMinnanoAvUrl('https://attacker.com/actress123.html'),
+    null,
+  );
+});
+
+test('validateSnapshot accepts enriched minnano-av fields', () => {
+  const snapshot = {
+    schemaVersion: SNAPSHOT_SCHEMA_VERSION,
+    snapshotId: 'demo-minnano',
+    createdAt: '2026-09-12T00:00:00.000Z',
+    source: {
+      url: 'https://jav.guru/?s=&orderby=views-monthly&order=DESC&category_name=jav',
+      orderBy: 'views-monthly',
+      category: 'jav',
+      pages: 3,
+      listEntries: 45,
+      uniqueMovies: 45,
+      enrichment: {
+        provider: 'avbase',
+        attempted: 1,
+        matched: 1,
+        skipped: 0,
+        blocked: 0,
+      },
+    },
+    actresses: [
+      {
+        id: 'demo-star',
+        sourceUrl: 'https://jav.guru/actress/demo-star/',
+        name: 'Demo Star',
+        publicName: 'Bánh mì',
+        aliases: [],
+        imagePath: '/actress-cache/snapshots/demo-minnano/images/demo-star.jpg',
+        socialLinks: [],
+        minnanoAvUrl: 'https://www.minnano-av.com/actress908789.html',
+        debutYear: 2024,
+        ratings: {
+          looks: 8.83,
+          body: 8.8,
+          charm: 9.07,
+          eroticAppeal: 9.03,
+          overall: 9.07,
+        },
+        tags: ['Ngực khủng', 'Mỹ nhân'],
+        score: 45,
+        tier: 0,
+        bestRank: 1,
+        appearances: 1,
+        contributingMovies: [
+          {
+            rank: 1,
+            code: 'DEMO-1',
+            movieUrl: 'https://jav.guru/demo-movie/',
+          },
+        ],
+      },
+    ],
+  };
+
+  const validated = validateSnapshot(snapshot);
+  assert.ok(validated);
+  assert.equal(
+    validated.actresses[0].minnanoAvUrl,
+    'https://www.minnano-av.com/actress908789.html',
+  );
+  assert.equal(validated.actresses[0].debutYear, 2024);
+  assert.equal(validated.actresses[0].ratings?.overall, 9.07);
+  assert.deepEqual(validated.actresses[0].tags, ['Ngực khủng', 'Mỹ nhân']);
 });

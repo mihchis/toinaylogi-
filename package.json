@@ -9,7 +9,7 @@
     "start": "next start",
     "preview": "next start",
     "data:refresh": "tsx scripts/refresh-actress-data.ts",
-    "test": "node --test tests/cookies.test.mjs tests/case-mechanics.test.mjs && tsx --test tests/crawler-parser.test.ts tests/food-aliases.test.ts tests/open-count.test.ts",
+    "test": "node --test tests/cookies.test.mjs tests/case-mechanics.test.mjs && tsx --test tests/crawler-parser.test.ts tests/food-aliases.test.ts tests/open-count.test.ts tests/direct-card-dialog.test.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",

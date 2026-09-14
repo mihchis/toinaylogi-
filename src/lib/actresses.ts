@@ -12,6 +12,13 @@ export type ContributingMovie = {
   code: string;
   movieUrl: string;
 };
+export type ActressRatings = {
+  looks?: number;
+  body?: number;
+  charm?: number;
+  eroticAppeal?: number;
+  overall?: number;
+};
 export type Actress = {
   id: string;
   sourceUrl: string;
@@ -35,6 +42,10 @@ export type Actress = {
   socialLinks: SocialLink[];
   avBaseUrl?: string;
   wikipediaUrl?: string;
+  minnanoAvUrl?: string;
+  ratings?: ActressRatings;
+  tags?: string[];
+  debutYear?: number;
   score: number;
   tier: Tier;
   bestRank: number;
@@ -42,7 +53,7 @@ export type Actress = {
   contributingMovies: ContributingMovie[];
 };
 export type EnrichmentStats = {
-  provider: 'avbase';
+  provider: 'avbase' | 'minnano-av' | 'mixed';
   attempted: number;
   matched: number;
   skipped: number;
@@ -98,6 +109,15 @@ const optionalNumber = (value: unknown, min: number, max: number) =>
         value <= max
       ? value
       : null;
+const optionalFloat = (value: unknown, min: number, max: number) =>
+  value === undefined
+    ? undefined
+    : typeof value === 'number' &&
+        Number.isFinite(value) &&
+        value >= min &&
+        value <= max
+      ? Math.round(value * 100) / 100
+      : null;
 const safeIsoDate = (value: unknown) => {
   const text = safeText(value, 10);
   if (!text || !/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
@@ -143,6 +163,26 @@ export function canonicalAvBaseUrl(value: unknown) {
       return null;
     url.search = '';
     url.hash = '';
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+
+export function canonicalMinnanoAvUrl(value: unknown) {
+  if (typeof value !== 'string') return null;
+  try {
+    const url = new URL(value);
+    if (
+      url.protocol !== 'https:' ||
+      (url.hostname !== 'www.minnano-av.com' &&
+        url.hostname !== 'minnano-av.com') ||
+      !/^\/actress\d+\.html$/.test(url.pathname)
+    )
+      return null;
+    url.search = '';
+    url.hash = '';
+    url.hostname = 'www.minnano-av.com';
     return url.href;
   } catch {
     return null;
@@ -221,7 +261,12 @@ function parseSocialLinks(value: unknown): SocialLink[] | null {
 function parseEnrichment(value: unknown): EnrichmentStats | null {
   if (!value || typeof value !== 'object') return null;
   const row = value as Record<string, unknown>;
-  if (row.provider !== 'avbase') return null;
+  if (
+    row.provider !== 'avbase' &&
+    row.provider !== 'minnano-av' &&
+    row.provider !== 'mixed'
+  )
+    return null;
   const attempted = optionalNumber(row.attempted, 0, 2_500);
   const matched = optionalNumber(row.matched, 0, 500);
   const skipped = optionalNumber(row.skipped, 0, 500);
@@ -232,12 +277,58 @@ function parseEnrichment(value: unknown): EnrichmentStats | null {
     blocked === null
     ? null
     : {
-        provider: 'avbase',
+        provider: row.provider as 'avbase' | 'minnano-av' | 'mixed',
         attempted: attempted ?? 0,
         matched: matched ?? 0,
         skipped: skipped ?? 0,
         blocked: blocked ?? 0,
       };
+}
+
+function parseRatings(value: unknown): ActressRatings | null | undefined {
+  if (value === undefined) return undefined;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const row = value as Record<string, unknown>;
+  const looks = optionalFloat(row.looks, 0, 10);
+  const body = optionalFloat(row.body, 0, 10);
+  const charm = optionalFloat(row.charm, 0, 10);
+  const eroticAppeal = optionalFloat(row.eroticAppeal, 0, 10);
+  const overall = optionalFloat(row.overall, 0, 10);
+  if (
+    looks === null ||
+    body === null ||
+    charm === null ||
+    eroticAppeal === null ||
+    overall === null
+  )
+    return null;
+  if (
+    looks === undefined &&
+    body === undefined &&
+    charm === undefined &&
+    eroticAppeal === undefined &&
+    overall === undefined
+  )
+    return undefined;
+  return {
+    ...(looks !== undefined ? { looks } : {}),
+    ...(body !== undefined ? { body } : {}),
+    ...(charm !== undefined ? { charm } : {}),
+    ...(eroticAppeal !== undefined ? { eroticAppeal } : {}),
+    ...(overall !== undefined ? { overall } : {}),
+  };
+}
+
+function parseTags(value: unknown): string[] | null | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || value.length > 50) return null;
+  const tags: string[] = [];
+  for (const item of value) {
+    const text = safeText(item, 80);
+    if (!text) return null;
+    tags.push(text);
+  }
+  return tags;
 }
 
 export function validateSnapshot(input: unknown): ActressSnapshot | null {
@@ -357,6 +448,13 @@ export function validateSnapshot(input: unknown): ActressSnapshot | null {
             isSafeWikipediaUrl(row.wikipediaUrl)
           ? row.wikipediaUrl
           : null;
+    const minnanoAvUrl =
+      row.minnanoAvUrl === undefined
+        ? undefined
+        : canonicalMinnanoAvUrl(row.minnanoAvUrl);
+    const debutYear = optionalNumber(row.debutYear, 1980, 2035);
+    const ratings = parseRatings(row.ratings);
+    const tags = parseTags(row.tags);
     if (
       [
         age,
@@ -374,6 +472,10 @@ export function validateSnapshot(input: unknown): ActressSnapshot | null {
         birthDate,
         avBaseUrl,
         wikipediaUrl,
+        minnanoAvUrl,
+        debutYear,
+        ratings,
+        tags,
       ].some((value) => value === null) ||
       !isSafeLocalAsset(row.imagePath)
     )
@@ -402,6 +504,10 @@ export function validateSnapshot(input: unknown): ActressSnapshot | null {
       socialLinks,
       ...(avBaseUrl ? { avBaseUrl } : {}),
       ...(wikipediaUrl ? { wikipediaUrl } : {}),
+      ...(minnanoAvUrl ? { minnanoAvUrl } : {}),
+      ...(ratings ? { ratings } : {}),
+      ...(tags && tags.length ? { tags } : {}),
+      ...(debutYear != null ? { debutYear } : {}),
       score: row.score as number,
       tier: row.tier as Tier,
       bestRank: row.bestRank as number,
