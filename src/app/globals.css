@@ -1921,4 +1921,670 @@ footer a {
   font-size: 10px;
 }
 
+/* ==========================================================================
+   REDESIGNED 2-COLUMN MASTERPIECE MODAL (ACTRESS & MOVIE)
+   ========================================================================== */
+.actress-dialog-wide {
+  max-width: 960px !important;
+  width: 92vw !important;
+  max-height: 90vh !important;
+  background: #141c22 !important;
+  border: 1px solid #2d3f4d !important;
+  border-radius: 12px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 40px rgba(0, 0, 0, 0.5) !important;
+  position: relative;
+}
+
+/* Ambient Cinema Backdrop Glow */
+.modal-ambient-glow {
+  position: absolute;
+  top: -80px;
+  left: -80px;
+  right: -80px;
+  height: 280px;
+  background-size: cover;
+  background-position: center 20%;
+  filter: blur(50px) opacity(0.22);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.actress-dialog-layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Scrollbar styling for modal */
+.actress-dialog-layout::-webkit-scrollbar {
+  width: 6px;
+}
+.actress-dialog-layout::-webkit-scrollbar-track {
+  background: #10171c;
+}
+.actress-dialog-layout::-webkit-scrollbar-thumb {
+  background: #2a3c48;
+  border-radius: 3px;
+}
+
+/* CỘT TRÁI: VISUAL HERO */
+.actress-dialog-left {
+  background: rgba(16, 23, 29, 0.95);
+  border-right: 1px solid #233340;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.actress-portrait-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 3.8;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  background: #0d1419;
+}
+
+.portrait-glow-backdrop {
+  position: absolute;
+  inset: -15%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(25px) opacity(0.65);
+  transform: scale(1.1);
+  z-index: 1;
+}
+
+.actress-portrait-img {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+  image-rendering: -webkit-optimize-contrast;
+  display: block;
+}
+
+.actress-rarity-ribbon {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.actress-identity-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.actress-main-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: #f0f6fc;
+  margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.3px;
+}
+.actress-sub-name {
+  font-size: 13px;
+  color: #8da4b5;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Social Badges */
+.actress-social-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.social-badge-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: 5px;
+  background: #1a2732;
+  border: 1px solid #2d404f;
+  color: #cbd7de;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.social-badge-btn:hover {
+  background: #263847;
+  border-color: #48647a;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+.social-badge-btn.x:hover {
+  border-color: #ffffff;
+}
+.social-badge-btn.instagram:hover {
+  border-color: #e1306c;
+  color: #f7a8c4;
+}
+.social-badge-btn.minnano {
+  background: #242217;
+  border-color: #4a4122;
+  color: #e4ae39;
+}
+.social-badge-btn.minnano:hover {
+  border-color: #e4ae39;
+  color: #ffd778;
+}
+
+/* Quick Actions */
+.actress-quick-actions {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+}
+.action-btn-search {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: #20313e;
+  border: 1px solid #354f63;
+  color: #e6edf2;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.action-btn-search:hover {
+  background: #2b4152;
+  border-color: #4a6d88;
+  color: #ffffff;
+}
+.action-btn-search.source {
+  background: #1b382b;
+  border-color: #2a5c44;
+  color: #8ce4b4;
+}
+.action-btn-search.source:hover {
+  background: #244c3a;
+  border-color: #387c5b;
+  color: #b7fad5;
+}
+.action-btn-again {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #3d8bfd 0%, #206be6 100%);
+  border: 1px solid #5a9dfc;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(32, 107, 230, 0.35);
+  transition: all 0.15s ease;
+}
+.action-btn-again:hover {
+  background: linear-gradient(180deg, #4f96fd 0%, #2e77f0 100%);
+  box-shadow: 0 6px 18px rgba(32, 107, 230, 0.5);
+  transform: translateY(-1px);
+}
+
+/* CỘT PHẢI: DATA INTELLIGENCE & FILMOGRAPHY */
+.actress-dialog-right {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: #141c22;
+}
+
+/* 1. Biometrics Grid */
+.biometrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.biometric-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #19232b;
+  border: 1px solid #273744;
+  border-radius: 8px;
+}
+.bio-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #23323e;
+  color: #7aa5c2;
+  flex-shrink: 0;
+}
+.bio-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.bio-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #7991a0;
+  font-weight: 600;
+}
+.bio-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f0f6fc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.bio-cup-pill {
+  font-size: 10px;
+  font-weight: 700;
+  color: #e4ae39;
+  background: #352814;
+  border: 1px solid #57411a;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+.bio-blood-pill {
+  font-size: 10px;
+  font-weight: 600;
+  color: #d32ce6;
+  background: #35143a;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+/* 2. Community Ratings Panel */
+.community-ratings-panel {
+  background: #172129;
+  border: 1px solid #283947;
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ratings-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #23313d;
+  padding-bottom: 10px;
+}
+.ratings-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e6edf2;
+}
+.star-icon-gold {
+  color: #f59e0b;
+  fill: #f59e0b;
+}
+.overall-score-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 12px;
+  color: #9ab0bf;
+}
+.overall-score-badge strong {
+  font-size: 16px;
+  font-weight: 800;
+  color: #f59e0b;
+}
+.ratings-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 18px;
+}
+.score-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.score-bar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+.score-bar-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #8da4b5;
+  font-weight: 500;
+}
+.score-bar-value {
+  font-size: 12px;
+  font-weight: 700;
+}
+.score-bar-value small {
+  font-size: 10px;
+  font-weight: 400;
+  color: #637785;
+}
+.score-bar-track {
+  height: 6px;
+  background: #23313c;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.score-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 3. Tags Container */
+.actress-tags-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tags-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #718897;
+}
+.tags-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tag-chip {
+  font-size: 11px;
+  font-weight: 600;
+  color: #b8c9d3;
+  background: #1a252e;
+  border: 1px solid #2b3b47;
+  padding: 3px 9px;
+  border-radius: 4px;
+}
+
+/* 4. Filmography Section */
+.filmography-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.filmography-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #23323e;
+  padding-bottom: 8px;
+}
+.filmography-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e6edf2;
+}
+.filmography-hint {
+  font-size: 11px;
+  color: #718897;
+}
+.filmography-list-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.filmography-list-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.filmography-list-scroll::-webkit-scrollbar-thumb {
+  background: #2a3d4d;
+  border-radius: 3px;
+}
+
+.film-card-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #18222a;
+  border: 1px solid #253441;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+.film-card-row:hover {
+  background: #1e2c36;
+  border-color: #3b5367;
+}
+.film-card-badge-col {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.film-rank-badge {
+  font-size: 10px;
+  font-weight: 800;
+  color: #f59e0b;
+  background: #362913;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+.film-code-badge {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e4ae39;
+  letter-spacing: 0.5px;
+}
+.film-card-info-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.film-title-text {
+  font-size: 11px;
+  color: #cbd7de;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.35;
+}
+.film-studio-tag {
+  font-size: 9px;
+  font-weight: 700;
+  color: #8da4b5;
+  background: #1f2b34;
+  padding: 1px 4px;
+  border-radius: 2px;
+  width: fit-content;
+}
+.film-card-actions-col {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.film-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-decoration: none;
+  background: #233340;
+  border: 1px solid #334a5d;
+  color: #cbd7de;
+  transition: all 0.12s ease;
+}
+.film-action-btn:hover {
+  background: #2d4152;
+  border-color: #4a6c88;
+  color: #ffffff;
+}
+.film-action-btn.detail {
+  background: #1a382c;
+  border-color: #275743;
+  color: #92e6b9;
+}
+.film-action-btn.detail:hover {
+  background: #234d3b;
+  border-color: #377a5e;
+  color: #c0fad9;
+}
+
+/* MOVIE MODAL SPECIFIC */
+.movie-modal-wide .movie-poster-container {
+  aspect-ratio: 16 / 10;
+}
+.movie-modal-wide .movie-code-title {
+  color: #e4ae39;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.movie-tagline-desc {
+  font-size: 13px;
+  color: #a4bcc9;
+  margin: 0;
+  line-height: 1.4;
+}
+.movie-cast-panel {
+  background: #172129;
+  border: 1px solid #273744;
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cast-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #8da4b5;
+}
+.cast-names-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cast-idol-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  background: #1f2d37;
+  border: 1px solid #334857;
+  color: #e6edf2;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.cast-idol-pill:hover {
+  background: #293c4a;
+  border-color: #48687f;
+  color: #ffffff;
+}
+.movie-full-title-panel {
+  background: #162027;
+  border: 1px solid #23313d;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.full-title-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #718897;
+}
+.full-title-content {
+  font-size: 12px;
+  color: #cbd7de;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* RESPONSIVE MOBILE */
+@media (max-width: 768px) {
+  .actress-dialog-wide {
+    width: 96vw !important;
+    max-height: 94vh !important;
+  }
+  .actress-dialog-layout {
+    grid-template-columns: 1fr;
+  }
+  .actress-dialog-left {
+    border-right: none;
+    border-bottom: 1px solid #233340;
+    padding: 18px;
+  }
+  .actress-portrait-container {
+    max-width: 260px;
+    margin: 0 auto;
+  }
+  .actress-dialog-right {
+    padding: 18px;
+  }
+  .biometrics-grid {
+    grid-template-columns: 1fr;
+  }
+  .ratings-progress-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
 

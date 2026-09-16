@@ -46,6 +46,8 @@ import { AuthDialog } from '@/components/auth/auth-dialog';
 import { InventoryDialog } from '@/components/inventory/inventory-dialog';
 import { CrateSwitcher, type CrateType } from '@/components/crate/crate-switcher';
 import { MovieCard } from '@/components/crate/movie-card';
+import { ActressDialog } from '@/client/components/crate/actress-dialog';
+import { MovieDialog } from '@/client/components/crate/movie-dialog';
 import { buildMoviesFromSnapshot, type Movie } from '@/lib/movies';
 
 const colors = ['#4b69ff', '#8847ff', '#d32ce6', '#eb4b4b', '#e4ae39'];
@@ -770,323 +772,28 @@ export default function Home() {
             {spinning ? t.opening : (result || movieResult) ? t.openAgain : t.open}
           </button>
         </div>
-        <Dialog open={revealed} onOpenChange={setRevealed}>
-          <DialogContent className="winner-dialog" showCloseButton={false}>
-            {result && (
-              <>
-                <DialogTitle className="winner-title">
-                  {result.name}
-                </DialogTitle>
-                {(result.nativeName || result.nameReading || result.age) && (
-                  <p className="winner-native-name">
-                    {[
-                      result.nativeName,
-                      result.nameReading,
-                      result.age ? `${result.age} ${t.ageUnit}` : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </p>
-                )}
-                <DialogDescription className="winner-description">
-                  {t.tiers[result.tier]}
-                </DialogDescription>
-                <div
-                  className="winner-art"
-                  style={
-                    { '--rarity': colors[result.tier] } as React.CSSProperties
-                  }
-                >
-                  <ActressImage actress={result} alt={result.name} />
-                </div>
-                {(result.birthDate ||
-                  result.heightCm ||
-                  result.debutYear ||
-                  result.bustCm ||
-                  result.waistCm ||
-                  result.hipCm ||
-                  result.cup ||
-                  result.bloodType ||
-                  result.videoCount) && (
-                  <div className="winner-details">
-                    <div className="winner-detail">
-                      <span>{t.profile}</span>
-                      <strong>
-                        {[
-                          result.birthDate
-                            ? formatBirthDate(result.birthDate, language)
-                            : null,
-                          result.heightCm ? `${result.heightCm} cm` : null,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ') || '—'}
-                      </strong>
-                      {result.debutYear && (
-                        <small className="winner-subdetail">
-                          {`${t.debut}: ${result.debutYear}`}
-                        </small>
-                      )}
-                    </div>
 
-                    <div className="winner-detail">
-                      <span>{t.measurements}</span>
-                      <strong>
-                        {result.bustCm ||
-                        result.waistCm ||
-                        result.hipCm ||
-                        result.cup
-                          ? `B${result.bustCm ?? '—'}${result.cup ? ` (${result.cup.replace(/-Cup$/i, '').trim()})` : ''} · W${result.waistCm ?? '—'} · H${result.hipCm ?? '—'} cm`
-                          : '—'}
-                      </strong>
-                      {(result.bloodType || result.videoCount) && (
-                        <small className="winner-subdetail">
-                          {[
-                            result.bloodType
-                              ? `${t.bloodType}: ${result.bloodType}`
-                              : null,
-                            result.videoCount
-                              ? `${result.videoCount} ${t.videoCountUnit}`
-                              : null,
-                          ]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </small>
-                      )}
-                    </div>
-                  </div>
-                )}
+        <ActressDialog
+          actress={result}
+          open={revealed && Boolean(result)}
+          onOpenChange={(isOpen) => {
+            setRevealed(isOpen);
+            if (!isOpen) setResult(null);
+          }}
+          language={language}
+          onOpenAgain={open}
+        />
 
-                {result.ratings && (
-                  <div className="winner-ratings-card">
-                    <div className="winner-ratings-header">
-                      <span className="winner-ratings-label">{t.ratings}</span>
-                      {result.ratings.overall !== undefined && (
-                        <div className="winner-rating-overall">
-                          <span className="overall-label">
-                            {t.overallScore}
-                          </span>
-                          <StarRating score={result.ratings.overall} />
-                        </div>
-                      )}
-                    </div>
-                    <div className="winner-ratings-grid">
-                      {result.ratings.looks !== undefined && (
-                        <div className="winner-rating-item">
-                          <span className="rating-name">{t.looksScore}</span>
-                          <StarRating score={result.ratings.looks} />
-                        </div>
-                      )}
-                      {result.ratings.body !== undefined && (
-                        <div className="winner-rating-item">
-                          <span className="rating-name">{t.bodyScore}</span>
-                          <StarRating score={result.ratings.body} />
-                        </div>
-                      )}
-                      {result.ratings.charm !== undefined && (
-                        <div className="winner-rating-item">
-                          <span className="rating-name">{t.charmScore}</span>
-                          <StarRating score={result.ratings.charm} />
-                        </div>
-                      )}
-                      {result.ratings.eroticAppeal !== undefined && (
-                        <div className="winner-rating-item">
-                          <span className="rating-name">
-                            {t.eroticAppealScore}
-                          </span>
-                          <StarRating score={result.ratings.eroticAppeal} />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {result.tags && result.tags.length > 0 && (
-                  <div className="winner-tags" aria-label={t.tags}>
-                    {result.tags.map((tag) => (
-                      <span key={tag} className="winner-tag">
-                        {language === 'en' && TAG_VI_TO_EN[tag]
-                          ? TAG_VI_TO_EN[tag]
-                          : tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <div className="winner-movies-section">
-                  <div className="winner-movies-heading">
-                    <Film size={15} />
-                    <strong>{t.topFilms}</strong>
-                    <span className="winner-movies-count">
-                      ({result.contributingMovies.length} phim)
-                    </span>
-                  </div>
-                  <div className="winner-movies-list">
-                    {result.contributingMovies.map((movie) => {
-                      const info = parseMovieInfo(movie);
-                      return (
-                        <div key={movie.code} className="winner-movie-row">
-                          <div className="winner-movie-header">
-                            <div className="winner-movie-left">
-                              <span className="winner-movie-rank">#{info.rank}</span>
-                              <span className="winner-movie-code">{info.code}</span>
-                            </div>
-                            <div className="winner-movie-actions">
-                              <a
-                                href={info.searchGoogle}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="winner-movie-btn"
-                                title="Tìm kiếm trên Google"
-                              >
-                                Google <ExternalLink size={10} />
-                              </a>
-                              <a
-                                href={info.sourceUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="winner-movie-btn source-btn"
-                                title="Xem trang nguồn phim"
-                              >
-                                Chi tiết <ExternalLink size={10} />
-                              </a>
-                            </div>
-                          </div>
-                          {info.title && info.title !== info.code && (
-                            <p className="winner-movie-title">{info.title}</p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                {result.socialLinks.length > 0 && (
-                  <div className="winner-socials">
-                    {result.socialLinks.map((social, index) => (
-                      <a
-                        key={`${social.label}-${social.url}-${index}`}
-                        href={social.url}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {social.label}
-                        {social.handle ? ` @${social.handle}` : ''}{' '}
-                        <ExternalLink size={12} />
-                      </a>
-                    ))}
-                  </div>
-                )}
-                {(result.wikipediaUrl || result.minnanoAvUrl) && (
-                  <div className="winner-socials winner-reference-links">
-                    {result.wikipediaUrl && (
-                      <a
-                        href={result.wikipediaUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {t.wikipedia} <ExternalLink size={12} />
-                      </a>
-                    )}
-                    {result.minnanoAvUrl && (
-                      <a
-                        href={result.minnanoAvUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {t.minnanoAvProfile} <ExternalLink size={12} />
-                      </a>
-                    )}
-                  </div>
-                )}
-                <div className="winner-actions">
-                  <a
-                    className="find-button"
-                    href={`https://www.google.com/search?q=${encodeURIComponent(result.nativeName || result.name)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <span>{t.source}</span>
-                    <ExternalLink size={16} />
-                  </a>
-                  <button onClick={() => setRevealed(false)}>
-                    {t.continue}
-                  </button>
-                </div>
-              </>
-            )}
-
-            {movieResult && (
-              <>
-                <DialogTitle className="winner-title">
-                  {movieResult.code}
-                </DialogTitle>
-                <p className="winner-native-name">
-                  {movieResult.title}
-                </p>
-                <DialogDescription className="winner-description">
-                  {t.tiers[movieResult.tier]}
-                </DialogDescription>
-                <div
-                  className="winner-art movie-winner-art"
-                  style={
-                    { '--rarity': colors[movieResult.tier] } as React.CSSProperties
-                  }
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    className="actress-image"
-                    src={movieResult.coverUrl}
-                    alt={movieResult.code}
-                  />
-                </div>
-
-                <div className="winner-details">
-                  <div className="winner-detail">
-                    <span>Mã Phim</span>
-                    <strong>{movieResult.code}</strong>
-                    <small className="winner-subdetail">
-                      Hạng phổ biến: #{movieResult.rank}
-                    </small>
-                  </div>
-                  <div className="winner-detail">
-                    <span>Diễn Viên Tham Gia</span>
-                    <strong>
-                      {movieResult.actressNames.length > 0
-                        ? movieResult.actressNames.join(', ')
-                        : 'Đang cập nhật'}
-                    </strong>
-                    <small className="winner-subdetail">
-                      Phẩm chất: {t.tiers[movieResult.tier]}
-                    </small>
-                  </div>
-                </div>
-
-                <div className="winner-actions">
-                  <a
-                    className="find-button"
-                    href={`https://www.google.com/search?q=${encodeURIComponent(movieResult.code)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <span>Google Phim</span>
-                    <ExternalLink size={16} />
-                  </a>
-                  <a
-                    className="find-button"
-                    style={{ background: '#3b82f6', color: '#fff' }}
-                    href={movieResult.movieUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <span>Trang Nguồn</span>
-                    <ExternalLink size={16} />
-                  </a>
-                  <button onClick={() => setRevealed(false)}>
-                    {t.continue}
-                  </button>
-                </div>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
+        <MovieDialog
+          movie={movieResult}
+          open={revealed && Boolean(movieResult)}
+          onOpenChange={(isOpen) => {
+            setRevealed(isOpen);
+            if (!isOpen) setMovieResult(null);
+          }}
+          language={language}
+          onOpenAgain={open}
+        />
         <section className="inventory">
           <div className="section-heading">
             <div>
