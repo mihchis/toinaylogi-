@@ -9,7 +9,7 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(
     url &&
     key &&
-    url.startsWith('https://') &&
+    (url.startsWith('http://') || url.startsWith('https://')) &&
     !url.includes('your-project-url') &&
     !key.includes('your-anon-key')
   );
