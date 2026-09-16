@@ -29,18 +29,6 @@ export function UserMenu({
           <LogIn size={15} />
           <span>Đăng nhập</span>
         </button>
-        <button
-          type="button"
-          className="user-action-btn inventory-btn"
-          onClick={onOpenInventory}
-          title="Xem túi đồ"
-        >
-          <Package size={15} />
-          <span>Túi đồ</span>
-          {inventoryCount > 0 && (
-            <span className="inventory-badge-count">{inventoryCount}</span>
-          )}
-        </button>
         <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
       </>
     );
