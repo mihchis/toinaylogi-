@@ -395,11 +395,25 @@ export const ActressDialog = memo(function ActressDialog({
               <div className="filmography-header">
                 <div className="filmography-title">
                   <Film size={16} />
-                  <span>Bộ Phim Nổi Bật ({movies.length} tác phẩm)</span>
+                  <span>
+                    {language === 'vi'
+                      ? `Phim Lọt Top BXH (${movies.length} tác phẩm)`
+                      : `Top Ranking Movies (${movies.length})`}
+                  </span>
                 </div>
-                <small className="filmography-hint">
-                  Xếp theo độ phổ biến & lượt xem cao nhất
-                </small>
+                <a
+                  href={actress.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="filmography-hint-link"
+                  title="Xem toàn bộ kho phim trên JAV Guru"
+                >
+                  <span>
+                    {language === 'vi'
+                      ? `Xem toàn bộ ${actress.videoCount || ''} phim ↗`
+                      : `View all ${actress.videoCount || ''} movies ↗`}
+                  </span>
+                </a>
               </div>
 
               <div className="filmography-list-scroll">
