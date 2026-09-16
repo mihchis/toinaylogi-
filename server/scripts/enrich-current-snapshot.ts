@@ -4,12 +4,12 @@ import {
   type Actress,
   type CurrentSnapshot,
   validateSnapshot,
-} from '../src/client/lib/actresses';
+} from '../../client/lib/actresses';
 import {
   createMinnanoAvEnricher,
   parseMinnanoAvProfile,
   searchMinnanoAv,
-} from '../src/server/crawler/minnano-av';
+} from '../crawler/minnano-av';
 
 async function main() {
   const currentRaw = await readFile(

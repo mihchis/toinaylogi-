@@ -5,39 +5,52 @@ import type { User } from '@supabase/supabase-js';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { InventoryItem, ItemType } from '@/lib/supabase/types';
 
-const LOCAL_STORAGE_KEY = 'toinaylogi_user_inventory';
+function getUserStorageKey(userId: string) {
+  return `toinaylogi_user_inventory_${userId}`;
+}
 
-function loadLocalInventory(): InventoryItem[] {
+function loadUserLocalInventory(userId: string): InventoryItem[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const raw = localStorage.getItem(getUserStorageKey(userId));
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 }
 
-function saveLocalInventory(items: InventoryItem[]) {
+function saveUserLocalInventory(userId: string, items: InventoryItem[]) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
+    localStorage.setItem(getUserStorageKey(userId), JSON.stringify(items));
   } catch {}
 }
 
 export function useInventory(user: User | null) {
   const [items, setItems] = useState<InventoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  // Dọn dẹp key cũ không gắn với user nếu có
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('toinaylogi_user_inventory');
+      } catch {}
+    }
+  }, []);
 
   const fetchInventory = useCallback(async () => {
+    // CHƯA ĐĂNG NHẬP -> Không nạp túi đồ
     if (!user) {
-      setItems(loadLocalInventory());
+      setItems([]);
       setLoading(false);
       return;
     }
 
+    setLoading(true);
     const supabase = getSupabaseBrowserClient();
     if (!supabase) {
-      setItems(loadLocalInventory());
+      setItems(loadUserLocalInventory(user.id));
       setLoading(false);
       return;
     }
@@ -52,12 +65,12 @@ export function useInventory(user: User | null) {
       if (!error && data) {
         setItems(data as InventoryItem[]);
       } else {
-        // Fallback to local
-        setItems(loadLocalInventory());
+        // Fallback to user-scoped local storage
+        setItems(loadUserLocalInventory(user.id));
       }
     } catch (err) {
       console.warn('Failed to fetch user inventory from Supabase:', err);
-      setItems(loadLocalInventory());
+      setItems(loadUserLocalInventory(user.id));
     } finally {
       setLoading(false);
     }
@@ -79,12 +92,16 @@ export function useInventory(user: User | null) {
       },
       type: ItemType,
     ) => {
+      // CHƯA ĐĂNG NHẬP -> Không lưu vào túi đồ
+      if (!user) {
+        return;
+      }
+
       const now = new Date().toISOString();
       const supabase = getSupabaseBrowserClient();
 
-      if (user && supabase) {
+      if (supabase) {
         try {
-          // Check if item exists in inventory for this user
           const { data: existing } = await supabase
             .from('user_inventory')
             .select('*')
@@ -121,12 +138,12 @@ export function useInventory(user: User | null) {
           void fetchInventory();
           return;
         } catch (err) {
-          console.warn('Failed to write to Supabase inventory, writing to local:', err);
+          console.warn('Failed to write to Supabase inventory, writing to user local storage:', err);
         }
       }
 
-      // Local storage fallback
-      const current = loadLocalInventory();
+      // User-scoped Local storage fallback
+      const current = loadUserLocalInventory(user.id);
       const existingIdx = current.findIndex(
         (i) => i.item_type === type && i.item_id === payload.id,
       );
@@ -156,7 +173,7 @@ export function useInventory(user: User | null) {
         next = [newItem, ...current];
       }
 
-      saveLocalInventory(next);
+      saveUserLocalInventory(user.id, next);
       setItems(next);
     },
     [user, fetchInventory],
