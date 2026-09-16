@@ -1,7 +1,19 @@
 'use client';
 
-import { memo } from 'react';
-import { ExternalLink, Film, Award, Sparkles, Building2, Users } from 'lucide-react';
+import { memo, useState } from 'react';
+import {
+  ExternalLink,
+  Film,
+  Award,
+  Sparkles,
+  Building2,
+  Users,
+  Calendar,
+  UserCheck,
+  Tag,
+  Copy,
+  Check,
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -27,17 +39,26 @@ export const MovieDialog = memo(function MovieDialog({
   language?: Language;
   onOpenAgain?: () => void;
 }) {
+  const [copied, setCopied] = useState(false);
+
   if (!movie) return null;
 
   const t = copy[language];
   const rarityColor = colors[movie.tier];
   const rarityName = t.tiers[movie.tier];
-  const studio = detectStudio(movie.code);
+  const detectedStudio = detectStudio(movie.code);
+  const studioName = movie.studio || detectedStudio || 'JAV Studio';
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(movie.code).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="actress-dialog-wide movie-modal-wide" showCloseButton={true}>
-        {/* Ambient Glow */}
+        {/* Ambient Glow Backdrop */}
         <div
           className="modal-ambient-glow"
           style={
@@ -50,7 +71,7 @@ export const MovieDialog = memo(function MovieDialog({
         />
 
         <div className="actress-dialog-layout">
-          {/* CỘT TRÁI: POSTER PHIM & ACTIONS */}
+          {/* CỘT TRÁI: POSTER PHIM & HÀNH ĐỘNG NHANH */}
           <div className="actress-dialog-left">
             <div className="actress-portrait-container movie-poster-container">
               <div
@@ -72,13 +93,25 @@ export const MovieDialog = memo(function MovieDialog({
                 className="actress-portrait-img movie-poster-img"
                 src={movie.coverUrl}
                 alt={movie.code}
+                loading="eager"
               />
             </div>
 
             <div className="actress-identity-block">
-              <DialogTitle className="actress-main-name movie-code-title">
-                {movie.code}
-              </DialogTitle>
+              <div className="movie-code-row">
+                <DialogTitle className="actress-main-name movie-code-title">
+                  {movie.code}
+                </DialogTitle>
+                <button
+                  type="button"
+                  onClick={handleCopyCode}
+                  className="copy-code-btn"
+                  title={language === 'vi' ? 'Sao chép mã phim' : 'Copy movie code'}
+                >
+                  {copied ? <Check size={14} color="#2ecc71" /> : <Copy size={14} />}
+                </button>
+              </div>
+
               <DialogDescription className="movie-tagline-desc">
                 {movie.title}
               </DialogDescription>
@@ -91,7 +124,7 @@ export const MovieDialog = memo(function MovieDialog({
                 target="_blank"
                 rel="noreferrer"
               >
-                <span>Tìm kiếm Google</span>
+                <span>{language === 'vi' ? 'Google Phim' : 'Google Search'}</span>
                 <ExternalLink size={14} />
               </a>
               <a
@@ -100,7 +133,7 @@ export const MovieDialog = memo(function MovieDialog({
                 target="_blank"
                 rel="noreferrer"
               >
-                <span>Trang Nguồn</span>
+                <span>{language === 'vi' ? 'Trang Nguồn' : 'Source Page'}</span>
                 <ExternalLink size={14} />
               </a>
               {onOpenAgain && (
@@ -113,21 +146,24 @@ export const MovieDialog = memo(function MovieDialog({
                   }}
                 >
                   <Sparkles size={14} />
-                  <span>Mở tiếp</span>
+                  <span>{language === 'vi' ? 'Mở tiếp' : 'Open Again'}</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* CỘT PHẢI: THÔNG TIN PHIM CHI TIẾT */}
+          {/* CỘT PHẢI: THÔNG TIN PHIM CHI TIẾT & TOÀN DIỆN */}
           <div className="actress-dialog-right">
+            {/* LƯỚI THÔNG SỐ PHIM (SPECS GRID) */}
             <div className="biometrics-grid">
               <div className="biometric-card">
                 <div className="bio-icon">
                   <Film size={16} />
                 </div>
                 <div className="bio-content">
-                  <span className="bio-label">Mã Phim & Thứ Hạng</span>
+                  <span className="bio-label">
+                    {language === 'vi' ? 'Mã Phim & Xếp Hạng' : 'Code & Ranking'}
+                  </span>
                   <strong className="bio-value">
                     {movie.code}
                     <span className="bio-cup-pill">Hạng #{movie.rank}</span>
@@ -140,19 +176,51 @@ export const MovieDialog = memo(function MovieDialog({
                   <Building2 size={16} />
                 </div>
                 <div className="bio-content">
-                  <span className="bio-label">Hãng Sản Xuất (Maker)</span>
-                  <strong className="bio-value">
-                    {studio || 'JAV Studio'}
-                  </strong>
+                  <span className="bio-label">
+                    {language === 'vi' ? 'Hãng Sản Xuất (Studio)' : 'Studio Maker'}
+                  </span>
+                  <strong className="bio-value">{studioName}</strong>
                 </div>
               </div>
+
+              {movie.releaseDate && (
+                <div className="biometric-card">
+                  <div className="bio-icon">
+                    <Calendar size={16} />
+                  </div>
+                  <div className="bio-content">
+                    <span className="bio-label">
+                      {language === 'vi' ? 'Ngày Phát Hành' : 'Release Date'}
+                    </span>
+                    <strong className="bio-value">{movie.releaseDate}</strong>
+                  </div>
+                </div>
+              )}
+
+              {movie.director && (
+                <div className="biometric-card">
+                  <div className="bio-icon">
+                    <UserCheck size={16} />
+                  </div>
+                  <div className="bio-content">
+                    <span className="bio-label">
+                      {language === 'vi' ? 'Đạo Diễn' : 'Director'}
+                    </span>
+                    <strong className="bio-value">{movie.director}</strong>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Diễn Viên Tham Gia */}
+            {/* DÀN NỮ DIỄN VIÊN THAM GIA */}
             <div className="movie-cast-panel">
               <div className="cast-panel-header">
                 <Users size={15} />
-                <span>Nữ Diễn Viên Tham Gia ({movie.actressNames.length} idol)</span>
+                <span>
+                  {language === 'vi'
+                    ? `Nữ Diễn Viên Tham Gia (${movie.actressNames.length} idol)`
+                    : `Starring Actresses (${movie.actressNames.length})`}
+                </span>
               </div>
               <div className="cast-names-list">
                 {movie.actressNames.length > 0 ? (
@@ -169,14 +237,56 @@ export const MovieDialog = memo(function MovieDialog({
                     </a>
                   ))
                 ) : (
-                  <span className="cast-empty-hint">Đang cập nhật diễn viên</span>
+                  <span className="cast-empty-hint">
+                    {language === 'vi' ? 'Đang cập nhật diễn viên' : 'Updating cast'}
+                  </span>
                 )}
               </div>
             </div>
 
-            {/* Chi Tiết Tiêu Đề */}
+            {/* DÀN DIỄN VIÊN NAM (NẾU CÓ) */}
+            {movie.actors && movie.actors.length > 0 && (
+              <div className="movie-cast-panel actors-panel">
+                <div className="cast-panel-header">
+                  <Users size={15} />
+                  <span>
+                    {language === 'vi'
+                      ? `Diễn Viên Nam (${movie.actors.length})`
+                      : `Male Actors (${movie.actors.length})`}
+                  </span>
+                </div>
+                <div className="cast-names-list">
+                  {movie.actors.map((name) => (
+                    <span key={name} className="cast-actor-pill">
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* THỂ LOẠI & TAGS PHIM */}
+            {movie.tags && movie.tags.length > 0 && (
+              <div className="movie-tags-panel">
+                <div className="tags-panel-header">
+                  <Tag size={15} />
+                  <span>{language === 'vi' ? 'Thể Loại & Đặc Điểm' : 'Categories & Tags'}</span>
+                </div>
+                <div className="movie-tags-list">
+                  {movie.tags.map((tag) => (
+                    <span key={tag} className="movie-tag-pill">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* CHI TIẾT TIÊU ĐỀ PHIM */}
             <div className="movie-full-title-panel">
-              <span className="full-title-label">Tiêu Đề Đầy Đủ:</span>
+              <span className="full-title-label">
+                {language === 'vi' ? 'Tiêu Đề Đầy Đủ:' : 'Full Title:'}
+              </span>
               <p className="full-title-content">{movie.title}</p>
             </div>
           </div>

@@ -2557,6 +2557,86 @@ footer a {
   line-height: 1.5;
 }
 
+/* MOVIE MODAL SPECIFIC ENHANCEMENTS */
+.movie-poster-container {
+  aspect-ratio: 16 / 10 !important;
+  max-width: 320px;
+}
+.movie-poster-img {
+  aspect-ratio: 16 / 10 !important;
+  object-fit: cover !important;
+}
+.movie-code-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.copy-code-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #192732;
+  border: 1px solid #2e4354;
+  border-radius: 5px;
+  color: #9cb5c7;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.copy-code-btn:hover {
+  background: #253949;
+  color: #ffffff;
+  border-color: #4a6880;
+}
+.movie-tags-panel {
+  background: #141c22;
+  border: 1px solid #23313b;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tags-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #8da4b5;
+}
+.movie-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.movie-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #19252e;
+  border: 1px solid #293a46;
+  color: #8ec3e6;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+.actors-panel {
+  opacity: 0.9;
+}
+.cast-actor-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #17222a;
+  border: 1px solid #253440;
+  color: #95a8b5;
+  font-size: 11px;
+}
+
 /* RESPONSIVE MOBILE */
 @media (max-width: 768px) {
   .actress-dialog-wide {

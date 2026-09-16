@@ -9,6 +9,12 @@ export type Movie = {
   tier: Tier;
   rank: number;
   actressNames: string[];
+  studio?: string;
+  label?: string;
+  releaseDate?: string;
+  director?: string;
+  tags?: string[];
+  actors?: string[];
 };
 
 export function extractTitleFromSlug(movieUrl: string, code: string): string {
@@ -38,7 +44,7 @@ export function buildMoviesFromSnapshot(snapshot: ActressSnapshot): Movie[] {
   const map = new Map<string, Movie>();
 
   for (const actress of snapshot.actresses) {
-    for (const movie of actress.contributingMovies) {
+    for (const movie of actress.contributingMovies as any[]) {
       const existing = map.get(movie.code);
       if (existing) {
         if (!existing.actressNames.includes(actress.name)) {
@@ -47,6 +53,19 @@ export function buildMoviesFromSnapshot(snapshot: ActressSnapshot): Movie[] {
         if (movie.rank < existing.rank) {
           existing.rank = movie.rank;
         }
+        // Cập nhật thêm nếu movie này có coverUrl mà existing chưa có
+        if (movie.coverUrl && !existing.coverUrl.startsWith('http')) {
+          existing.coverUrl = movie.coverUrl;
+        }
+        if (movie.title && existing.title === existing.code) {
+          existing.title = movie.title;
+        }
+        if (movie.studio && !existing.studio) existing.studio = movie.studio;
+        if (movie.releaseDate && !existing.releaseDate) existing.releaseDate = movie.releaseDate;
+        if (movie.director && !existing.director) existing.director = movie.director;
+        if (movie.label && !existing.label) existing.label = movie.label;
+        if (movie.tags?.length && !existing.tags?.length) existing.tags = movie.tags;
+        if (movie.actors?.length && !existing.actors?.length) existing.actors = movie.actors;
       } else {
         // Assign tier based on best rank
         // Rank 1-10: Tier 4 (Special)
@@ -63,12 +82,18 @@ export function buildMoviesFromSnapshot(snapshot: ActressSnapshot): Movie[] {
         map.set(movie.code, {
           id: movie.code,
           code: movie.code,
-          title: extractTitleFromSlug(movie.movieUrl, movie.code),
+          title: movie.title || extractTitleFromSlug(movie.movieUrl, movie.code),
           movieUrl: movie.movieUrl,
-          coverUrl: actress.imagePath, // Fallback to actress image
+          coverUrl: movie.coverUrl || actress.imagePath,
           tier,
           rank: movie.rank,
           actressNames: [actress.name],
+          studio: movie.studio,
+          label: movie.label,
+          releaseDate: movie.releaseDate,
+          director: movie.director,
+          tags: movie.tags || [],
+          actors: movie.actors || [],
         });
       }
     }
