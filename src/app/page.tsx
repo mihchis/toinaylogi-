@@ -48,6 +48,7 @@ import { CrateSwitcher, type CrateType } from '@/components/crate/crate-switcher
 import { MovieCard } from '@/components/crate/movie-card';
 import { ActressDialog } from '@/client/components/crate/actress-dialog';
 import { MovieDialog } from '@/client/components/crate/movie-dialog';
+import { Pagination, type PageSizeOption } from '@/client/components/ui/pagination';
 import { buildMoviesFromSnapshot, type Movie } from '@/lib/movies';
 
 const colors = ['#4b69ff', '#8847ff', '#d32ce6', '#eb4b4b', '#e4ae39'];
@@ -244,6 +245,11 @@ export default function Home() {
   const [lastMovieChoice, setLastMovieChoice] = useState<Movie | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [active, setActive] = useState<Actress[]>([]);
+
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<PageSizeOption>(24);
+  const inventorySectionRef = useRef<HTMLElement>(null);
 
   type ReelItem = { id: number; actress?: Actress; movie?: Movie };
   const [reel, setReel] = useState<ReelItem[]>([]);
@@ -512,39 +518,68 @@ export default function Home() {
     [allowDirectCardDialog, spinning],
   );
 
+  const handlePageChange = useCallback((nextPage: number) => {
+    setPage(nextPage);
+    if (inventorySectionRef.current) {
+      inventorySectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
+  const handlePageSizeChange = useCallback((newSize: PageSizeOption) => {
+    setPageSize(newSize);
+    setPage(1);
+  }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeCrate, preferences.profile]);
+
+  const sortedItems = useMemo(() => {
+    if (activeCrate === 'actress') {
+      return [...eligible].sort((a, b) => b.tier - a.tier || a.name.localeCompare(b.name));
+    }
+    return [...movies].sort((a, b) => b.tier - a.tier || a.code.localeCompare(b.code));
+  }, [activeCrate, eligible, movies]);
+
+  const totalItemsCount = sortedItems.length;
+  const effectivePageSize = pageSize === 'all' ? Math.max(1, totalItemsCount) : pageSize;
+  const totalPages = pageSize === 'all' ? 1 : Math.max(1, Math.ceil(totalItemsCount / effectivePageSize));
+  const currentPage = Math.min(page, totalPages);
+
+  const paginatedItems = useMemo(() => {
+    if (pageSize === 'all') return sortedItems;
+    const start = (currentPage - 1) * effectivePageSize;
+    return sortedItems.slice(start, start + effectivePageSize);
+  }, [sortedItems, pageSize, currentPage, effectivePageSize]);
+
   const inventory = useMemo(() => {
     if (activeCrate === 'actress') {
-      return [...eligible]
-        .sort((a, b) => b.tier - a.tier || a.name.localeCompare(b.name))
-        .map((actress) => (
-          <Card
-            key={actress.id}
-            actress={actress}
-            language={language}
-            small
-            onClick={
-              allowDirectCardDialog ? () => handleCardClick(actress) : undefined
-            }
-          />
-        ));
-    }
-    return [...movies]
-      .sort((a, b) => b.tier - a.tier || a.code.localeCompare(b.code))
-      .map((movie) => (
-        <MovieCard
-          key={movie.id}
-          movie={movie}
+      return (paginatedItems as Actress[]).map((actress) => (
+        <Card
+          key={actress.id}
+          actress={actress}
           language={language}
           small
           onClick={
-            allowDirectCardDialog ? () => handleMovieCardClick(movie) : undefined
+            allowDirectCardDialog ? () => handleCardClick(actress) : undefined
           }
         />
       ));
+    }
+    return (paginatedItems as Movie[]).map((movie) => (
+      <MovieCard
+        key={movie.id}
+        movie={movie}
+        language={language}
+        small
+        onClick={
+          allowDirectCardDialog ? () => handleMovieCardClick(movie) : undefined
+        }
+      />
+    ));
   }, [
     activeCrate,
-    eligible,
-    movies,
+    paginatedItems,
     language,
     allowDirectCardDialog,
     handleCardClick,
@@ -794,7 +829,7 @@ export default function Home() {
           language={language}
           onOpenAgain={open}
         />
-        <section className="inventory">
+        <section className="inventory" ref={inventorySectionRef}>
           <div className="section-heading">
             <div>
               <span className="eyebrow">{t.whatsInside}</span>
@@ -805,9 +840,7 @@ export default function Home() {
                     : language === 'vi'
                       ? 'Phim trong hòm'
                       : 'Movies in crate'}{' '}
-                  <span>
-                    {activeCrate === 'actress' ? eligible.length : movies.length}
-                  </span>
+                  <span>{totalItemsCount}</span>
                 </h2>
                 {activeCrate === 'actress' && (
                   <PreferencesPanel
@@ -829,7 +862,47 @@ export default function Home() {
               ))}
             </div>
           </div>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItemsCount}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            language={language}
+            itemName={
+              activeCrate === 'actress'
+                ? language === 'vi'
+                  ? 'nữ diễn viên'
+                  : 'actresses'
+                : language === 'vi'
+                  ? 'bộ phim'
+                  : 'movies'
+            }
+            className="top-bar"
+          />
+
           <div className="inventory-grid">{inventory}</div>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItemsCount}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            language={language}
+            itemName={
+              activeCrate === 'actress'
+                ? language === 'vi'
+                  ? 'nữ diễn viên'
+                  : 'actresses'
+                : language === 'vi'
+                  ? 'bộ phim'
+                  : 'movies'
+            }
+          />
         </section>
 
         <InventoryDialog
