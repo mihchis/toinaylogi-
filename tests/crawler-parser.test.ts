@@ -93,7 +93,7 @@ test('crawler scorer excludes profiles without a downloaded image', () => {
   );
   assert.equal(assignTiers(imageBacked, 2)[0]?.id, 'with-image');
 });
-test('snapshot schema requires a same-tier food alias and an image path', () => {
+test('snapshot schema requires a valid name and an image path', () => {
   const snapshot = {
     schemaVersion: SNAPSHOT_SCHEMA_VERSION,
     snapshotId: 'demo-snapshot',
@@ -149,7 +149,7 @@ test('snapshot schema requires a same-tier food alias and an image path', () => 
   assert.equal(
     validateSnapshot({
       ...snapshot,
-      actresses: [{ ...snapshot.actresses[0], publicName: 'Pizza' }],
+      actresses: [{ ...snapshot.actresses[0], publicName: '' }],
     }),
     null,
   );

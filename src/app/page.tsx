@@ -8,6 +8,7 @@ import {
   Box,
   CircleHelp,
   ExternalLink,
+  Film,
   Sparkles,
   Star,
   StarHalf,
@@ -38,6 +39,14 @@ import { PreferencesPanel } from '@/components/preferences-panel';
 import { CaseAudio } from '@/lib/case-audio';
 import { TAG_VI_TO_EN } from '@/lib/tag-translations';
 import { isDirectCardDialogEnabled } from '@/lib/direct-card-dialog';
+import { useAuth } from '@/hooks/use-auth';
+import { useInventory } from '@/hooks/use-inventory';
+import { UserMenu } from '@/components/auth/user-menu';
+import { AuthDialog } from '@/components/auth/auth-dialog';
+import { InventoryDialog } from '@/components/inventory/inventory-dialog';
+import { CrateSwitcher, type CrateType } from '@/components/crate/crate-switcher';
+import { MovieCard } from '@/components/crate/movie-card';
+import { buildMoviesFromSnapshot, type Movie } from '@/lib/movies';
 
 const colors = ['#4b69ff', '#8847ff', '#d32ce6', '#eb4b4b', '#e4ae39'];
 const reelStep = 254;
@@ -48,6 +57,36 @@ function formatBirthDate(value: string, language: Language) {
   return new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-US', {
     dateStyle: 'long',
   }).format(new Date(year, month - 1, day));
+}
+
+function parseMovieInfo(movie: { rank: number; code: string; movieUrl: string }) {
+  let title = '';
+  try {
+    const url = new URL(movie.movieUrl);
+    const slug = url.pathname.split('/').filter(Boolean).pop() || '';
+    const parts = slug.split('-').filter((p) => p.length > 0);
+    const codeParts = movie.code.toLowerCase().split('-');
+    let startIdx = 0;
+    if (
+      parts.length > codeParts.length &&
+      codeParts.every((cp, i) => parts[i]?.toLowerCase() === cp)
+    ) {
+      startIdx = codeParts.length;
+    }
+    const titleWords = parts.slice(startIdx);
+    if (titleWords.length > 0) {
+      title = titleWords
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+    }
+  } catch {}
+  return {
+    code: movie.code,
+    rank: movie.rank,
+    title: title || movie.code,
+    searchGoogle: `https://www.google.com/search?q=${encodeURIComponent(movie.code)}`,
+    sourceUrl: movie.movieUrl,
+  };
 }
 
 function StarRating({
@@ -126,6 +165,7 @@ const Card = memo(function Card({
   slot?: number;
   onClick?: () => void;
 }) {
+  const topMovie = actress.contributingMovies?.[0];
   return (
     <div
       className={`actress-card ${small ? 'small' : ''} ${onClick ? 'clickable' : ''}`}
@@ -133,7 +173,7 @@ const Card = memo(function Card({
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
-      aria-label={onClick ? actress.publicName : undefined}
+      aria-label={onClick ? `${actress.name} (${actress.nativeName || ''})` : undefined}
       onKeyDown={
         onClick
           ? (e) => {
@@ -154,9 +194,28 @@ const Card = memo(function Card({
       }
     >
       <span className="tier">{copy[language].tiers[actress.tier]}</span>
-      <ActressImage actress={actress} alt={actress.publicName} />
+      <ActressImage actress={actress} alt={actress.name} />
       <div className="card-copy">
-        <strong>{actress.publicName}</strong>
+        <strong>{actress.name}</strong>
+        {actress.nativeName && <span>{actress.nativeName}</span>}
+        <div className="card-quick-meta">
+          {actress.cup && (
+            <span className="meta-badge cup-badge">
+              {actress.cup.replace(/-Cup$/i, '')} Cup
+            </span>
+          )}
+          {actress.heightCm && (
+            <span className="meta-badge">{actress.heightCm}cm</span>
+          )}
+          {topMovie && (
+            <span
+              className="meta-badge movie-badge"
+              title={`Top phim: ${topMovie.code}`}
+            >
+              {topMovie.code}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -174,12 +233,27 @@ export default function Home() {
   const [language, setLanguage] = useState<Language>('vi');
   const [sound, setSound] = useState(true);
   const [spinning, setSpinning] = useState(false);
+  const [activeCrate, setActiveCrate] = useState<CrateType>('actress');
+  const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
   const [result, setResult] = useState<Actress | null>(null);
+  const [movieResult, setMovieResult] = useState<Movie | null>(null);
   const [lastChoice, setLastChoice] = useState<Actress | null>(null);
+  const [lastMovieChoice, setLastMovieChoice] = useState<Movie | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [active, setActive] = useState<Actress[]>([]);
-  const [reel, setReel] = useState<{ actress: Actress; id: number }[]>([]);
+
+  type ReelItem = { id: number; actress?: Actress; movie?: Movie };
+  const [reel, setReel] = useState<ReelItem[]>([]);
   const [visibleStart, setVisibleStart] = useState(0);
+
+  const { user, signOut: authSignOut } = useAuth();
+  const {
+    items: inventoryItems,
+    stats: inventoryStats,
+    addItem: addInventoryItem,
+  } = useInventory(user);
+
   const busy = useRef(false);
   const viewport = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
@@ -187,6 +261,11 @@ export default function Home() {
   const frame = useRef(0);
   const audio = useRef<CaseAudio | null>(null);
   const t = copy[language];
+
+  const movies = useMemo(
+    () => (snapshot ? buildMoviesFromSnapshot(snapshot) : []),
+    [snapshot],
+  );
 
   useEffect(() => {
     const saved = readCookie<Language>('language');
@@ -228,7 +307,8 @@ export default function Home() {
     [active, preferences.profile],
   );
   useEffect(() => {
-    if (!eligible.length) {
+    const pool = activeCrate === 'actress' ? eligible : movies;
+    if (!pool.length) {
       setReel([]);
       setVisibleStart(0);
       position.current = reelInitialOffset;
@@ -236,18 +316,22 @@ export default function Home() {
         track.current.style.transform = `translate3d(${position.current}px,0,0)`;
       return;
     }
-    const firstSlot = Math.floor(Math.random() * eligible.length);
+    const firstSlot = Math.floor(Math.random() * pool.length);
     setReel(
       Array.from({ length: 12 }, (_, index) => {
         const id = firstSlot + index;
-        return { id, actress: eligible[id % eligible.length] };
+        const item = pool[id % pool.length]!;
+        return activeCrate === 'actress'
+          ? { id, actress: item as Actress }
+          : { id, movie: item as Movie };
       }),
     );
     setVisibleStart(firstSlot);
     position.current = reelInitialOffset - firstSlot * reelStep;
     if (track.current)
       track.current.style.transform = `translate3d(${position.current}px,0,0)`;
-  }, [eligible]);
+  }, [eligible, movies, activeCrate]);
+
   useEffect(() => {
     const last = readCookie<{ id?: unknown }>('last-choice');
     if (last?.id && typeof last.id === 'string') {
@@ -256,17 +340,22 @@ export default function Home() {
       setLastChoice(found);
     }
   }, [active]);
+
   const attachTrack = useCallback((node: HTMLDivElement | null) => {
     track.current = node;
     if (node) node.style.transform = `translate3d(${position.current}px,0,0)`;
   }, []);
 
   function open() {
-    if (busy.current || !eligible.length || !track.current || !viewport.current)
+    const pool = activeCrate === 'actress' ? eligible : movies;
+    if (busy.current || !pool.length || !track.current || !viewport.current)
       return;
     audio.current?.unlock();
     busy.current = true;
-    const winner = chooseTiered(eligible);
+    const winner =
+      activeCrate === 'actress'
+        ? chooseTiered(eligible)
+        : chooseTiered(movies);
     const step = reelStep,
       tileWidth = 240,
       width = viewport.current.clientWidth;
@@ -284,22 +373,33 @@ export default function Home() {
     let last = current.length
       ? Math.max(...current.map((item) => item.id))
       : center;
-    const recent: Actress[] = [];
+    const recent: (Actress | Movie)[] = [];
     while (last < target + 4) {
       last++;
-      const options = eligible.filter((item) => !recent.includes(item));
-      const actress =
+      const options = pool.filter((item) => !recent.includes(item));
+      const chosen =
         last === target
           ? winner
-          : chooseTiered(options.length ? options : eligible);
-      current.push({ id: last, actress });
-      recent.push(actress);
+          : activeCrate === 'actress'
+            ? chooseTiered(
+                options.length ? (options as Actress[]) : eligible,
+              )
+            : chooseTiered(
+                options.length ? (options as Movie[]) : movies,
+              );
+      if (activeCrate === 'actress') {
+        current.push({ id: last, actress: chosen as Actress });
+      } else {
+        current.push({ id: last, movie: chosen as Movie });
+      }
+      recent.push(chosen);
       if (recent.length > 8) recent.shift();
     }
     flushSync(() => {
       setReel(current);
       setSpinning(true);
       setResult(null);
+      setMovieResult(null);
     });
     audio.current?.play('csgo_ui_crate_open');
     const began = performance.now();
@@ -329,12 +429,48 @@ export default function Home() {
         frame.current = requestAnimationFrame(animate);
         return;
       }
-      recordSpin(winner);
-      void recordServerSpin();
+      if (activeCrate === 'actress') {
+        const actressWinner = winner as Actress;
+        recordSpin(actressWinner);
+        void recordServerSpin();
+        setResult(actressWinner);
+        setLastChoice(actressWinner);
+        void addInventoryItem(
+          {
+            id: actressWinner.id,
+            name: actressWinner.name,
+            subname: actressWinner.nativeName,
+            tier: actressWinner.tier,
+            imageUrl: actressWinner.imagePath,
+            metadata: {
+              cup: actressWinner.cup,
+              heightCm: actressWinner.heightCm,
+            },
+          },
+          'actress',
+        );
+      } else {
+        const movieWinner = winner as Movie;
+        void recordServerSpin();
+        setMovieResult(movieWinner);
+        setLastMovieChoice(movieWinner);
+        void addInventoryItem(
+          {
+            id: movieWinner.id,
+            name: movieWinner.code,
+            subname: movieWinner.title,
+            tier: movieWinner.tier,
+            imageUrl: movieWinner.coverUrl,
+            metadata: {
+              actressNames: movieWinner.actressNames,
+              movieUrl: movieWinner.movieUrl,
+            },
+          },
+          'movie',
+        );
+      }
       busy.current = false;
       setSpinning(false);
-      setResult(winner);
-      setLastChoice(winner);
       setRevealed(true);
       audio.current?.play(
         (
@@ -351,23 +487,33 @@ export default function Home() {
     frame.current = requestAnimationFrame(animate);
   }
 
-  const allowDirectCardDialog = isDirectCardDialogEnabled();
+  const allowDirectCardDialog =
+    process.env.NEXT_PUBLIC_DIRECT_CARD_DIALOG !== 'false';
 
   const handleCardClick = useCallback(
     (actress: Actress) => {
       if (!allowDirectCardDialog || spinning || busy.current) return;
       setResult(actress);
+      setMovieResult(null);
       setRevealed(true);
     },
     [allowDirectCardDialog, spinning],
   );
 
-  const inventory = useMemo(
-    () =>
-      [...eligible]
-        .sort(
-          (a, b) => b.tier - a.tier || a.publicName.localeCompare(b.publicName),
-        )
+  const handleMovieCardClick = useCallback(
+    (movie: Movie) => {
+      if (!allowDirectCardDialog || spinning || busy.current) return;
+      setMovieResult(movie);
+      setResult(null);
+      setRevealed(true);
+    },
+    [allowDirectCardDialog, spinning],
+  );
+
+  const inventory = useMemo(() => {
+    if (activeCrate === 'actress') {
+      return [...eligible]
+        .sort((a, b) => b.tier - a.tier || a.name.localeCompare(b.name))
         .map((actress) => (
           <Card
             key={actress.id}
@@ -378,9 +524,31 @@ export default function Home() {
               allowDirectCardDialog ? () => handleCardClick(actress) : undefined
             }
           />
-        )),
-    [eligible, language, allowDirectCardDialog, handleCardClick],
-  );
+        ));
+    }
+    return [...movies]
+      .sort((a, b) => b.tier - a.tier || a.code.localeCompare(b.code))
+      .map((movie) => (
+        <MovieCard
+          key={movie.id}
+          movie={movie}
+          language={language}
+          small
+          onClick={
+            allowDirectCardDialog ? () => handleMovieCardClick(movie) : undefined
+          }
+        />
+      ));
+  }, [
+    activeCrate,
+    eligible,
+    movies,
+    language,
+    allowDirectCardDialog,
+    handleCardClick,
+    handleMovieCardClick,
+  ]);
+
   if (!snapshot)
     return (
       <main className="cache-state">
@@ -400,6 +568,12 @@ export default function Home() {
           </span>
         </Link>
         <div className="header-actions">
+          <UserMenu
+            user={user}
+            inventoryCount={inventoryStats.totalSpins}
+            onOpenInventory={() => setInventoryOpen(true)}
+            onSignOut={authSignOut}
+          />
           <PreferencesPanel
             preferences={preferences}
             actresses={active}
@@ -423,15 +597,6 @@ export default function Home() {
           >
             {sound ? <Volume2 size={18} /> : <VolumeX size={18} />}
           </button>
-          <a
-            className="github-button"
-            href="https://github.com/zennomi/toinaylogi"
-            target="_blank"
-            rel="noreferrer"
-            aria-label={t.github}
-          >
-            GitHub <ExternalLink size={14} />
-          </a>
         </div>
       </header>
       <main>
@@ -468,16 +633,40 @@ export default function Home() {
             {status.message || t.cacheError}
           </p>
         )}
-        {!eligible.length && (
+        {activeCrate === 'actress' && !eligible.length && (
           <p className="preferences-message">{t.noEligible}</p>
         )}
+
+        <CrateSwitcher
+          activeCrate={activeCrate}
+          onChange={(crate) => {
+            if (spinning || busy.current) return;
+            setActiveCrate(crate);
+          }}
+          actressesCount={eligible.length}
+          moviesCount={movies.length}
+          disabled={spinning}
+        />
+
         <div className="cs-case-heading">
           <div className="cs-case-emblem" aria-hidden="true">
-            <Box size={20} />
+            {activeCrate === 'actress' ? <Sparkles size={20} /> : <Film size={20} />}
           </div>
           <div className="cs-case-info">
-            <span className="cs-case-subtitle">{t.crateCollection}</span>
-            <h2 className="cs-case-title">{t.crateTitle}</h2>
+            <span className="cs-case-subtitle">
+              {activeCrate === 'actress'
+                ? t.crateCollection
+                : language === 'vi'
+                  ? 'Tuyển Tập Phim Hot'
+                  : 'Hot Movie Collection'}
+            </span>
+            <h2 className="cs-case-title">
+              {activeCrate === 'actress'
+                ? t.crateTitle
+                : language === 'vi'
+                  ? 'Hòm Phim Siêu Phẩm'
+                  : 'Blockbuster Movie Crate'}
+            </h2>
           </div>
           <div className={`cs-case-status ${spinning ? 'opening' : 'ready'}`}>
             <span className="cs-case-status-dot" />
@@ -495,14 +684,33 @@ export default function Home() {
                 .filter(
                   ({ id }) => id >= visibleStart && id < visibleStart + 12,
                 )
-                .map(({ actress, id }) => (
-                  <Card
-                    key={id}
-                    actress={actress}
-                    language={language}
-                    slot={id}
-                  />
-                ))}
+                .map(({ actress, movie, id }) =>
+                  actress ? (
+                    <Card
+                      key={`actress-${id}`}
+                      actress={actress}
+                      language={language}
+                      slot={id}
+                      onClick={
+                        allowDirectCardDialog
+                          ? () => handleCardClick(actress)
+                          : undefined
+                      }
+                    />
+                  ) : movie ? (
+                    <MovieCard
+                      key={`movie-${id}`}
+                      movie={movie}
+                      language={language}
+                      slot={id}
+                      onClick={
+                        allowDirectCardDialog
+                          ? () => handleMovieCardClick(movie)
+                          : undefined
+                      }
+                    />
+                  ) : null,
+                )}
             </div>
             <div className="reel-fade left" />
             <div className="reel-fade right" />
@@ -513,7 +721,7 @@ export default function Home() {
             <span className="last-choice-tag">
               {t.lastChoice} ({localSpins}):
             </span>
-            {lastChoice ? (
+            {activeCrate === 'actress' && lastChoice ? (
               <div className="last-choice-card">
                 <span
                   className="last-choice-tier-pill"
@@ -526,7 +734,24 @@ export default function Home() {
                   {t.tiers[lastChoice.tier]}
                 </span>
                 <strong className="last-choice-name">
-                  {lastChoice.publicName}
+                  {lastChoice.name}
+                  {lastChoice.nativeName ? ` (${lastChoice.nativeName})` : ''}
+                </strong>
+              </div>
+            ) : activeCrate === 'movie' && lastMovieChoice ? (
+              <div className="last-choice-card">
+                <span
+                  className="last-choice-tier-pill"
+                  style={
+                    {
+                      '--rarity': colors[lastMovieChoice.tier],
+                    } as React.CSSProperties
+                  }
+                >
+                  {t.tiers[lastMovieChoice.tier]}
+                </span>
+                <strong className="last-choice-name">
+                  {lastMovieChoice.code} - {lastMovieChoice.title}
                 </strong>
               </div>
             ) : (
@@ -535,11 +760,14 @@ export default function Home() {
           </div>
           <button
             className="open-button"
-            disabled={spinning || !eligible.length}
+            disabled={
+              spinning ||
+              (activeCrate === 'actress' ? !eligible.length : !movies.length)
+            }
             onClick={open}
           >
             {spinning ? <AudioLines size={22} /> : <Sparkles size={21} />}
-            {spinning ? t.opening : result ? t.openAgain : t.open}
+            {spinning ? t.opening : (result || movieResult) ? t.openAgain : t.open}
           </button>
         </div>
         <Dialog open={revealed} onOpenChange={setRevealed}>
@@ -683,18 +911,52 @@ export default function Home() {
                     ))}
                   </div>
                 )}
-                <div className="winner-profile">
-                  <strong>{t.topFilms}</strong>
-                  {result.contributingMovies.map((movie) => (
-                    <a
-                      key={movie.code}
-                      href={`https://www.google.com/search?q=${encodeURIComponent(movie.code)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      #{movie.rank} · {movie.code} <ExternalLink size={12} />
-                    </a>
-                  ))}
+                <div className="winner-movies-section">
+                  <div className="winner-movies-heading">
+                    <Film size={15} />
+                    <strong>{t.topFilms}</strong>
+                    <span className="winner-movies-count">
+                      ({result.contributingMovies.length} phim)
+                    </span>
+                  </div>
+                  <div className="winner-movies-list">
+                    {result.contributingMovies.map((movie) => {
+                      const info = parseMovieInfo(movie);
+                      return (
+                        <div key={movie.code} className="winner-movie-row">
+                          <div className="winner-movie-header">
+                            <div className="winner-movie-left">
+                              <span className="winner-movie-rank">#{info.rank}</span>
+                              <span className="winner-movie-code">{info.code}</span>
+                            </div>
+                            <div className="winner-movie-actions">
+                              <a
+                                href={info.searchGoogle}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="winner-movie-btn"
+                                title="Tìm kiếm trên Google"
+                              >
+                                Google <ExternalLink size={10} />
+                              </a>
+                              <a
+                                href={info.sourceUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="winner-movie-btn source-btn"
+                                title="Xem trang nguồn phim"
+                              >
+                                Chi tiết <ExternalLink size={10} />
+                              </a>
+                            </div>
+                          </div>
+                          {info.title && info.title !== info.code && (
+                            <p className="winner-movie-title">{info.title}</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
                 {result.socialLinks.length > 0 && (
                   <div className="winner-socials">
@@ -750,6 +1012,79 @@ export default function Home() {
                 </div>
               </>
             )}
+
+            {movieResult && (
+              <>
+                <DialogTitle className="winner-title">
+                  {movieResult.code}
+                </DialogTitle>
+                <p className="winner-native-name">
+                  {movieResult.title}
+                </p>
+                <DialogDescription className="winner-description">
+                  {t.tiers[movieResult.tier]}
+                </DialogDescription>
+                <div
+                  className="winner-art movie-winner-art"
+                  style={
+                    { '--rarity': colors[movieResult.tier] } as React.CSSProperties
+                  }
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    className="actress-image"
+                    src={movieResult.coverUrl}
+                    alt={movieResult.code}
+                  />
+                </div>
+
+                <div className="winner-details">
+                  <div className="winner-detail">
+                    <span>Mã Phim</span>
+                    <strong>{movieResult.code}</strong>
+                    <small className="winner-subdetail">
+                      Hạng phổ biến: #{movieResult.rank}
+                    </small>
+                  </div>
+                  <div className="winner-detail">
+                    <span>Diễn Viên Tham Gia</span>
+                    <strong>
+                      {movieResult.actressNames.length > 0
+                        ? movieResult.actressNames.join(', ')
+                        : 'Đang cập nhật'}
+                    </strong>
+                    <small className="winner-subdetail">
+                      Phẩm chất: {t.tiers[movieResult.tier]}
+                    </small>
+                  </div>
+                </div>
+
+                <div className="winner-actions">
+                  <a
+                    className="find-button"
+                    href={`https://www.google.com/search?q=${encodeURIComponent(movieResult.code)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <span>Google Phim</span>
+                    <ExternalLink size={16} />
+                  </a>
+                  <a
+                    className="find-button"
+                    style={{ background: '#3b82f6', color: '#fff' }}
+                    href={movieResult.movieUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <span>Trang Nguồn</span>
+                    <ExternalLink size={16} />
+                  </a>
+                  <button onClick={() => setRevealed(false)}>
+                    {t.continue}
+                  </button>
+                </div>
+              </>
+            )}
           </DialogContent>
         </Dialog>
         <section className="inventory">
@@ -758,15 +1093,24 @@ export default function Home() {
               <span className="eyebrow">{t.whatsInside}</span>
               <div className="inventory-title-row">
                 <h2>
-                  {t.items} <span>{eligible.length}</span>
+                  {activeCrate === 'actress'
+                    ? t.items
+                    : language === 'vi'
+                      ? 'Phim trong hòm'
+                      : 'Movies in crate'}{' '}
+                  <span>
+                    {activeCrate === 'actress' ? eligible.length : movies.length}
+                  </span>
                 </h2>
-                <PreferencesPanel
-                  preferences={preferences}
-                  actresses={active}
-                  language={language}
-                  disabled={spinning}
-                  variant="inventory"
-                />
+                {activeCrate === 'actress' && (
+                  <PreferencesPanel
+                    preferences={preferences}
+                    actresses={active}
+                    language={language}
+                    disabled={spinning}
+                    variant="inventory"
+                  />
+                )}
               </div>
             </div>
             <div className="rarity-legend">
@@ -780,6 +1124,18 @@ export default function Home() {
           </div>
           <div className="inventory-grid">{inventory}</div>
         </section>
+
+        <InventoryDialog
+          open={inventoryOpen}
+          onOpenChange={setInventoryOpen}
+          items={inventoryItems}
+          totalActressesCount={eligible.length}
+          totalMoviesCount={movies.length}
+        />
+        <AuthDialog
+          open={authOpen}
+          onOpenChange={setAuthOpen}
+        />
         <footer>
           <div className="footer-left">
             <span>
@@ -800,16 +1156,6 @@ export default function Home() {
             </span>
           </div>
           <div className="footer-right">
-            <span>
-              {t.inspiredBy}{' '}
-              <a
-                href="https://github.com/nagisanzenin/truanayangi"
-                target="_blank"
-                rel="noreferrer"
-              >
-                nagisanzenin/truanayangi
-              </a>
-            </span>
             <span>
               {t.adultNote} {t.footer}{' '}
               <a

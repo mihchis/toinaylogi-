@@ -2,44 +2,40 @@
 
 **Tiếng Việt** · [English](README.en.md)
 
-Ứng dụng local mở hòm để chọn một nữ diễn viên. Pool được Next.js server trên máy crawl từ xếp hạng lượt xem tháng của XXX.Guru (ba trang đầu), enrich best-effort hồ sơ từ XXBase và làm mới tối đa mỗi tuần.
+Ứng dụng mở hòm phong cách CS:GO giúp bạn ngẫu nhiên chọn một nữ diễn viên theo độ hiếm (Rarity Tiers). Dữ liệu được crawl và lưu vào cache cục bộ trên máy, bổ sung hồ sơ chi tiết (số đo, hình ảnh, đánh giá, mạng xã hội) từ Minnano-AV và AvBase.
 
-<video src="assets/promo.mp4" controls="controls" muted="muted" width="100%"></video>
+## Tính năng nổi bật
+- 🎰 **Cơ chế mở hòm CS:GO**: Hiệu ứng cuộn băng chuyền mượt mà với âm thanh mở hòm chân thực.
+- ⭐ **Phân hạng độ hiếm (Rarity Tiers)**: Từ Quốc Dân, Hiếm, Cực Phẩm, Tối Mật đến ★ Đặc Biệt.
+- 🔍 **Xem hồ sơ trực tiếp**: Bấm vào bất kỳ thẻ bài nào để xem ảnh độ nét cao, số đo 3 vòng, cup ngực, điểm đánh giá và phim tiêu biểu.
+- 🎛️ **Tuỳ chỉnh danh sách**: Lọc bỏ những diễn viên hoặc tier không mong muốn trong bảng Tuỳ chỉnh.
+- 🔒 **Chạy local & bảo mật**: Mọi dữ liệu và cookie lưu trực tiếp trên máy của bạn.
 
-## Chạy trên máy
+## Hướng dẫn cài đặt & khởi chạy
 
-Cần Node.js 22.12+ và pnpm theo `package.json`.
-
-```sh
-pnpm install --frozen-lockfile
-cp .env.example .env
-redis-server
-pnpm dev
-```
-
-Mở [127.0.0.1:3000](http://127.0.0.1:3000). Lần đầu server crawl nền; UI sẽ chờ snapshot cục bộ. Dùng `pnpm data:refresh` để buộc làm mới/dò lỗi. Crawl chỉ publish snapshot mới khi toàn bộ list, phim, hồ sơ và ảnh hợp lệ; cache hiện tại vẫn được giữ khi lỗi.
+Yêu cầu Node.js 22.12+ và `npm` hoặc `pnpm`.
 
 ```sh
-pnpm test
-pnpm typecheck
-pnpm lint
-pnpm build
-pnpm preview
+# 1. Cài đặt dependencies
+npm install
+
+# 2. Tạo file cấu hình môi trường
+cp .env.example .env.local
+
+# 3. Khởi chạy dev server
+npm run dev
 ```
 
-Server chỉ lắng nghe loopback. Khi enrich, server dùng `impit` với Chrome TLS fingerprint chỉ cho request AvBase. Sau khi snapshot đã có, browser chỉ tải JSON và ảnh local; XXX.Guru/AvBase/Wikipedia/X/Instagram/TikTok chỉ mở qua liên kết bạn bấm.
+Truy cập ứng dụng tại: [http://localhost:3000](http://localhost:3000).
 
-## Dữ liệu cục bộ
+### Các lệnh hữu ích:
+```sh
+npm test          # Chạy test suite
+npm run typecheck # Kiểm tra kiểu TypeScript
+npm run lint      # Kiểm tra linter
+npm run build     # Build production
+npm run start     # Chạy production build
+```
 
-- Snapshot v4 và ảnh crawler nằm trong `public/actress-cache/` (gitignored); snapshot v3 cũ vẫn đọc được trong lúc refresh.
-- XXX.Guru quyết định ranking/tier; XXBase chỉ bổ sung best-effort tên Nhật/ruby, ngày sinh, số đo, cup, nhóm máu, quê quán, sở thích, social, Wikipedia và ảnh DMM được tải lại vào cache local.
-- Tiến trình/lock tạm nằm trong `.cache/jav-crawler/` (gitignored).
-- Lọc tier, loại trừ diễn viên, ngôn ngữ, lựa chọn gần nhất và số lượt mở local nằm trong cookie host-only, versioned, có giới hạn. Số local này chỉ thuộc browser hiện tại.
-- Bộ đếm `LƯỢT MỞ TOÀN SERVER` là số lượt mở hòm đã hoàn tất, được dùng chung bởi các client kết nối cùng Next.js server local và lưu tại Redis bằng key `toinaylogi:opens`. Chuỗi kết nối nằm trong `REDIS_URL` ở `.env` (mặc định local tại `redis://localhost:6379` trong `.env.example`); nó không phải metric deployment/cộng đồng.
-- Redis không chạy thì vẫn mở hòm được và số local vẫn tăng; bộ đếm server sẽ hiện là không khả dụng và tự thử lại khi tải lại trang hoặc mở hòm lần sau.
-
-## GitHub Pages, đóng góp và nguồn gốc
-
-GitHub Pages chỉ redirect đến https://truanayangi.com/; chỉ `pages-redirect/` được publish lên `gh-pages`, còn app này chạy local từ `main`. Chào đón issue/fork PR vào `main` bằng Việt hoặc Anh, kể cả draft PR.
-
-Dự án lấy cảm hứng từ [nagisanzenin/truanayangi](https://github.com/nagisanzenin/truanayangi). Repo giữ lịch sử từ `nagisanzenin/truanayangi`. Xem nguồn asset tại [ATTRIBUTION.md](ATTRIBUTION.md).
+## Nguồn dữ liệu & Bản quyền
+Xem chi tiết tại [ATTRIBUTION.md](ATTRIBUTION.md).

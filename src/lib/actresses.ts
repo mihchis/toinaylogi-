@@ -1,5 +1,3 @@
-import { isFoodAliasForTier } from './food-aliases';
-
 export const SNAPSHOT_SCHEMA_VERSION = 4 as const;
 const LEGACY_SNAPSHOT_SCHEMA_VERSION = 3 as const;
 export const TIER_COUNT = 5 as const;
@@ -342,16 +340,14 @@ export function validateSnapshot(input: unknown): ActressSnapshot | null {
     !snapshot.source ||
     !Array.isArray(snapshot.actresses) ||
     !snapshot.actresses.length ||
-    snapshot.actresses.length > 500
+    snapshot.actresses.length > 2000
   )
     return null;
   const source = snapshot.source as Record<string, unknown>;
   if (
-    source.url !==
-      'https://jav.guru/?s=&orderby=views-monthly&order=DESC&category_name=jav' ||
-    source.orderBy !== 'views-monthly' ||
+    typeof source.url !== 'string' ||
+    !source.url.includes('jav.guru') ||
     source.category !== 'jav' ||
-    source.pages !== 3 ||
     !Number.isSafeInteger(source.listEntries) ||
     !Number.isSafeInteger(source.uniqueMovies)
   )
@@ -398,7 +394,7 @@ export function validateSnapshot(input: unknown): ActressSnapshot | null {
       row.appearances < 1
     )
       return null;
-    if (!isFoodAliasForTier(publicName, row.tier as Tier)) return null;
+    if (!publicName || typeof publicName !== 'string') return null;
     const aliases = row.aliases
       .map((x) => safeText(x, 120))
       .filter(Boolean) as string[];

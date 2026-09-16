@@ -1,5 +1,5 @@
 {
-  "name": "truanayangi",
+  "name": "toinaylogi",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "start": "next start",
     "preview": "next start",
     "data:refresh": "tsx scripts/refresh-actress-data.ts",
-    "test": "node --test tests/cookies.test.mjs tests/case-mechanics.test.mjs && tsx --test tests/crawler-parser.test.ts tests/food-aliases.test.ts tests/open-count.test.ts tests/direct-card-dialog.test.ts",
+    "test": "node --test tests/cookies.test.mjs tests/case-mechanics.test.mjs && tsx --test tests/crawler-parser.test.ts tests/open-count.test.ts tests/direct-card-dialog.test.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.116.0",
     "cheerio": "^1.2.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",

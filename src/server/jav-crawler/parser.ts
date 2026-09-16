@@ -77,7 +77,7 @@ export function parseMovieActressUrls(html: string) {
     .toArray()
     .map((node) => canonicalJavUrl($(node).attr('href'), 'actress'))
     .filter(Boolean) as string[];
-  if (!urls.length) throw new Error('Movie has no parseable actress link');
+  if (!urls.length) return [];
   return [...new Set(urls)];
 }
 

@@ -35,10 +35,16 @@ export function PreferencesPanel({
   useEffect(() => setDraft(preferences.profile), [preferences.profile]);
   const shown = useMemo(
     () =>
-      actresses.filter((item) =>
-        item.publicName
-          .toLocaleLowerCase()
-          .includes(search.toLocaleLowerCase()),
+      actresses.filter(
+        (item) =>
+          item.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) ||
+          (item.nativeName &&
+            item.nativeName
+              .toLocaleLowerCase()
+              .includes(search.toLocaleLowerCase())) ||
+          item.publicName
+            .toLocaleLowerCase()
+            .includes(search.toLocaleLowerCase()),
       ),
     [actresses, search],
   );
@@ -122,7 +128,10 @@ export function PreferencesPanel({
                     })
                   }
                 />
-                <span>{item.publicName}</span>
+                <span>
+                  {item.name}
+                  {item.nativeName ? ` (${item.nativeName})` : ''}
+                </span>
                 <small>{tierNames[item.tier]}</small>
               </label>
             ))}
