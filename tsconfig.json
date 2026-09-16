@@ -19,7 +19,14 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@/client/*": ["./src/client/*"],
+      "@/server/*": ["./src/server/*"],
+      "@/components/*": ["./src/client/components/*"],
+      "@/hooks/*": ["./src/client/hooks/*"],
+      "@/lib/case-audio": ["./src/client/audio/case-audio"],
+      "@/lib/supabase/*": ["./src/client/supabase/*"],
+      "@/lib/*": ["./src/client/lib/*"]
     }
   },
   "include": [

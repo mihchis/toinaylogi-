@@ -8,7 +8,7 @@ import { join } from 'node:path';
 const out = mkdtempSync(join(tmpdir(), 'tnag-cookies-'));
 try {
   buildSync({
-    entryPoints: ['src/lib/cookies.ts'],
+    entryPoints: ['src/client/lib/cookies.ts'],
     outfile: join(out, 'cookies.cjs'),
     bundle: true,
     platform: 'node',

@@ -1,4 +1,4 @@
-import { incrementOpenCount, readOpenCount } from '@/server/open-counter';
+import { incrementOpenCount, readOpenCount } from '@/server/counter/open-counter';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

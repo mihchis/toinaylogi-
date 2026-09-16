@@ -4,13 +4,13 @@ import {
   parseOpenCountResponse,
   parseStoredOpenCount,
   MAX_OPEN_COUNT,
-} from '../src/lib/open-count';
+} from '../src/client/lib/open-count';
 import {
   incrementOpenCountFrom,
   OPEN_COUNTER_KEY,
   readOpenCountFrom,
   type OpenCounterStore,
-} from '../src/server/open-counter';
+} from '../src/server/counter/open-counter';
 
 test('validates Redis values and API payloads as safe non-negative integers', () => {
   assert.equal(parseStoredOpenCount(null), 0);

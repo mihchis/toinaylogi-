@@ -5,23 +5,23 @@ import {
   parseActressProfile,
   parseMovieActressUrls,
   parseRankingPage,
-} from '../src/server/jav-crawler/parser';
+} from '../src/server/crawler/parser';
 import {
   assignTiers,
   profilesWithImages,
-} from '../src/server/jav-crawler/scoring';
+} from '../src/server/crawler/scoring';
 import {
   SNAPSHOT_SCHEMA_VERSION,
   canonicalMinnanoAvUrl,
   validateSnapshot,
-} from '../src/lib/actresses';
+} from '../src/client/lib/actresses';
 import {
   extractMinnanoIdentity,
   matchesIdentity,
   normalizeName,
   parseMinnanoAvProfile,
-} from '../src/server/jav-crawler/minnano-av';
-import { translateTagToVietnamese } from '../src/lib/tag-translations';
+} from '../src/server/crawler/minnano-av';
+import { translateTagToVietnamese } from '../src/client/lib/tag-translations';
 
 const html = readFileSync(
   new URL('./fixtures/xxx-guru.html', import.meta.url),

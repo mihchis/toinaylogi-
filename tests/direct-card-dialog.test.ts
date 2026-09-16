@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   checkDirectCardDialogEnabled,
   isDirectCardDialogEnabled,
-} from '../src/lib/direct-card-dialog';
+} from '../src/client/lib/direct-card-dialog';
 
 test('checkDirectCardDialogEnabled returns true when env flag is "true" or "1"', () => {
   assert.equal(

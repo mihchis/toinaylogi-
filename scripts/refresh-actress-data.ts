@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { hostname } from 'node:os';
-import { refreshActressData } from '../src/server/jav-crawler/crawler';
-import { paths } from '../src/server/jav-crawler/store';
+import { refreshActressData } from '../src/server/crawler/crawler';
+import { paths } from '../src/server/crawler/store';
 
 const startedAt = Date.now();
 const stamp = () => new Date().toISOString();

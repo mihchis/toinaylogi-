@@ -9,7 +9,7 @@ import { join } from 'node:path';
 const out = mkdtempSync(join(tmpdir(), 'tnag-case-'));
 try {
   buildSync({
-    entryPoints: ['src/lib/case-mechanics.ts'],
+    entryPoints: ['src/client/lib/case-mechanics.ts'],
     outfile: join(out, 'case.cjs'),
     bundle: true,
     platform: 'node',
