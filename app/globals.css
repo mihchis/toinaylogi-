@@ -1925,16 +1925,21 @@ footer a {
    REDESIGNED 2-COLUMN MASTERPIECE MODAL (ACTRESS & MOVIE)
    ========================================================================== */
 .actress-dialog-wide {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
   max-width: 960px !important;
   width: 92vw !important;
-  max-height: 90vh !important;
+  max-height: 88vh !important;
   background: #141c22 !important;
   border: 1px solid #2d3f4d !important;
   border-radius: 12px !important;
   padding: 0 !important;
   overflow: hidden !important;
   box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 40px rgba(0, 0, 0, 0.5) !important;
-  position: relative;
+  z-index: 9999 !important;
 }
 
 /* Ambient Cinema Backdrop Glow */
